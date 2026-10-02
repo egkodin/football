@@ -1,0 +1,7 @@
+node_modules/
+dist/
+football-site.zip
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
