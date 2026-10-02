@@ -1,5 +1,5 @@
 import { createRequire } from 'node:module';
-import { mkdirSync } from 'node:fs';
+import { mkdirSync, readFileSync } from 'node:fs';
 import assert from 'node:assert/strict';
 const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_PATH || 'playwright');
 const out = process.env.FOOTBALL_SCREENSHOTS || '/tmp/football-smoke';
@@ -10,9 +10,32 @@ try {
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
-  const response = await page.goto(process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/', { waitUntil: 'networkidle' });
+  const response = await page.goto(process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });
   assert.equal(response.status(), 200);
+  await page.locator('.hero').waitFor();
+  assert(await page.locator('.hero, .hero *').evaluateAll(elements => elements.every(el => {
+    const style = getComputedStyle(el);
+    return style.animationName === 'none' && style.transform === 'none' && style.clipPath === 'none' && style.opacity === '1';
+  })), 'First screen must be fully visible without entrance animations');
+  await page.waitForLoadState('networkidle');
   await page.evaluate(() => document.fonts.ready);
+  const masks = await page.locator('.icon').evaluateAll(elements => [...new Set(elements.map(el => getComputedStyle(el).maskImage.match(/url\(["']?(.*?)["']?\)/)?.[1]))]);
+  assert(masks.length >= 12, 'Page icons must use local masks');
+  const iconSet = JSON.parse(readFileSync(new URL('../icons8.json', import.meta.url)));
+  const iconUrls = Object.keys(iconSet.icons.items).map(name => new URL(`icons/${name}.png`, page.url()).href);
+  assert(masks.every(url => iconUrls.includes(url)), 'Only the selected Icons8 set is used');
+  for (const url of iconUrls) {
+    assert.equal(new URL(url).origin, new URL(page.url()).origin, 'Icon must load locally');
+    const icon = await context.request.get(url);
+    assert.equal(icon.status(), 200);
+    const png = await icon.body();
+    assert.equal(png.subarray(0, 8).toString('hex'), '89504e470d0a1a0a');
+    assert.equal(png.readUInt32BE(16), 96);
+    assert.equal(png.readUInt32BE(20), 96);
+  }
+  assert.equal(await page.getByRole('link', { name: 'Иконки — Icons8' }).getAttribute('href'), 'https://icons8.com/');
+  console.log('17 local Icons8 PNGs and attribution: passed');
+  assert.equal(await page.locator('.hero-title-line').count(), 3);
   for (const id of ['about', 'coaches', 'program', 'venues', 'schedule', 'pricing', 'contacts']) assert.equal(await page.locator(`#${id}`).count(), 1);
   for (const [property, value] of Object.entries({ '--brand-green': '#11651a', '--yellow': '#ffdd2d', '--red': '#db320b' })) assert.equal(await page.evaluate(p => getComputedStyle(document.documentElement).getPropertyValue(p).trim(), property), value);
   for (let y = 0; y < await page.evaluate(() => document.body.scrollHeight); y += 700) { await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(50); }
@@ -61,6 +84,11 @@ try {
   assert.equal(await page.getByRole('button', { name: 'Показать фото 2: Спортивный зал' }).getAttribute('aria-pressed'), 'true');
   await page.getByRole('button', { name: 'Показать фото 3: Крытый футбольный модуль' }).click();
   assert.equal(await page.locator('.venue-overlay h3').innerText(), 'Крытый футбольный модуль');
+  // Fast input must leave the final selected photo visible after its transition.
+  for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
+  await page.waitForTimeout(400);
+  assert.equal(await page.getByRole('button', { name: 'Показать фото 1: Спортивный зал' }).getAttribute('aria-pressed'), 'true');
+  assert.equal(await page.locator('.venue-main > img').evaluate(el => getComputedStyle(el).opacity), '1');
   await page.locator('.price-card').nth(1).getByRole('button', { name: 'Выбрать абонемент' }).click();
   assert((await page.locator('.selected-plan').innerText()).replaceAll(/\s/g, '').includes('7480'));
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
@@ -85,6 +113,19 @@ try {
   await page.locator('#mobile-nav').getByRole('link', { name: 'Расписание' }).click();
   assert.equal(await page.locator('#mobile-nav').count(), 0);
   for (const a of await page.locator('a[href^="#"]').all()) assert.equal(await page.locator(await a.getAttribute('href')).count(), 1);
+  const reduced = await context.newPage();
+  await reduced.emulateMedia({ reducedMotion: 'reduce' });
+  await reduced.goto(page.url(), { waitUntil: 'networkidle' });
+  assert.equal(await reduced.locator('.hero-title-line').first().evaluate(el => getComputedStyle(el).animationName), 'none');
+  assert.equal(await reduced.locator('.motion-enter').count(), 0);
+  await reduced.locator('#program').scrollIntoViewIfNeeded();
+  assert.equal(await reduced.locator('#program h2').evaluate(el => getComputedStyle(el).opacity), '1');
+  await reduced.emulateMedia({ reducedMotion: 'no-preference' });
+  await reduced.waitForFunction(() => document.querySelector('#program h2')?.classList.contains('motion-enter'));
+  await reduced.emulateMedia({ reducedMotion: 'reduce' });
+  assert.equal(await reduced.evaluate(() => document.getAnimations().length), 0);
+  await reduced.close();
+  console.log('Motion, rapid gallery input and live reduced-motion preference: passed');
   assert.deepEqual(errors, []);
   console.log('9 responsive widths, mobile menu, anchors and browser errors: passed');
 } finally { await browser.close(); }
