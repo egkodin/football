@@ -44,11 +44,11 @@ export const plans = [
 ];
 
 export const venues = [
-  { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-1.jpeg') },
-  { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-2.jpeg') },
-  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-1.jpeg') },
-  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-2.jpeg') },
-  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-3.jpeg') },
+  { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-1-upscaled.jpg'), width: 1813, height: 868 },
+  { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-2-upscaled.jpg'), width: 1814, height: 867 },
+  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-1-upscaled.jpg'), width: 1814, height: 867 },
+  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-2-upscaled.jpg'), width: 1814, height: 867 },
+  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-3-upscaled.jpg'), width: 1814, height: 867 },
 ];
 
 export const faqs = [

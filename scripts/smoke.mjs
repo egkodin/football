@@ -41,6 +41,10 @@ try {
   for (let y = 0; y < await page.evaluate(() => document.body.scrollHeight); y += 700) { await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(50); }
   await page.waitForLoadState('networkidle');
   assert(await page.locator('img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)));
+  const upscaledPhotos = page.locator('.coach-photo-wrap > img, .venue-thumbnails img');
+  assert.equal(await upscaledPhotos.count(), 6);
+  assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'All six photographs must use higher-resolution replacements');
+  assert((await page.locator('.hero-photo').getAttribute('src')).endsWith('hero-training.jpg'), 'Keep the first photo unchanged');
   assert.equal(await page.locator('.brand-crest').count(), 2);
   await page.evaluate(() => scrollTo(0, 0));
   await page.waitForTimeout(400);
