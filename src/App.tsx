@@ -88,12 +88,14 @@ function EnrollmentDialog({ onClose, selectedPlan }: { onClose: () => void; sele
 function VenuePhoto({ venue, index, requested, active, base, onReady, onSettled }: { venue: typeof venues[number]; index: number; requested: boolean; active: boolean; base: boolean; onReady: (index: number) => void; onSettled: () => void }) {
   const [state, setState] = useState('loading');
   const [attempt, setAttempt] = useState(0);
+  const [visited, setVisited] = useState(requested);
+  useEffect(() => { if (requested) setVisited(true); }, [requested]);
   async function loaded(image: HTMLImageElement) {
     try { await image.decode(); setState('ready'); onReady(index); }
     catch { setState('error'); }
   }
   return <>
-    <img key={attempt} src={venue.image} alt={`${venue.title} СпортАкадемКлуба, фотография ${index + 1}`} width={venue.width} height={venue.height} loading="lazy" data-state={state} data-active={active} data-base={base} aria-hidden={!active} onLoad={event => loaded(event.currentTarget)} onError={() => setState('error')} onTransitionEnd={event => { if (event.propertyName === 'opacity' && active) onSettled(); }}/>
+    {(visited || requested) && <img key={attempt} src={venue.image} srcSet={venue.srcSet} sizes="(max-width: 640px) calc(100vw - 40px), (max-width: 1050px) calc(100vw - 64px), (max-width: 1416px) calc(100vw - 96px), 1320px" alt={`${venue.title} СпортАкадемКлуба, фотография ${index + 1}`} width={venue.width} height={venue.height} loading="lazy" decoding="async" data-state={state} data-active={active} data-base={base} aria-hidden={!active} onLoad={event => loaded(event.currentTarget)} onError={() => setState('error')} onTransitionEnd={event => { if (event.propertyName === 'opacity' && active) onSettled(); }}/>}
     {requested && state !== 'ready' && <div className="venue-photo-state" role="status">
       <p>{state === 'loading' ? 'Загружаем фотографию…' : 'Не удалось загрузить фотографию.'}</p>
         {state === 'error' && <button className="button button-primary" onClick={event => { event.currentTarget.closest('.venue-gallery')?.querySelector<HTMLButtonElement>('.gallery-controls button')?.focus(); setState('loading'); setAttempt(attempt + 1); }}>Повторить загрузку</button>}
@@ -114,7 +116,7 @@ function VenueGallery() {
     <div className="venue-main">{venues.map((venue, i) => <VenuePhoto key={venue.image} venue={venue} index={i} requested={index === i} active={shown === i} base={base === i} onReady={loaded => setReady(previous => previous.includes(loaded) ? previous : [...previous, loaded])} onSettled={() => setBase(null)}/>)}</div>
     <div className="venue-footer">
       <div className="venue-overlay"><h3>{current.title}</h3><span aria-live="polite" aria-atomic="true">{String(index + 1).padStart(2, '0')} / {String(venues.length).padStart(2, '0')}</span></div>
-      <div className="venue-thumbnails" role="group" aria-label="Фотографии залов">{venues.map((venue, i) => <button key={venue.image} className={index === i ? 'active' : ''} onClick={() => setIndex(i)} aria-label={`Показать фото ${i + 1}: ${venue.title}`} aria-pressed={index === i}><img src={venue.image} alt="" width={venue.width} height={venue.height} loading="lazy"/></button>)}</div>
+      <div className="venue-thumbnails" role="group" aria-label="Фотографии залов">{venues.map((venue, i) => <button key={venue.image} className={index === i ? 'active' : ''} onClick={() => setIndex(i)} aria-label={`Показать фото ${i + 1}: ${venue.title}`} aria-pressed={index === i}><img src={venue.thumbnail} alt="" width="320" height="213" loading="lazy" decoding="async"/></button>)}</div>
       <div className="gallery-controls"><button className="icon-button" onClick={() => setIndex(previous => (previous - 1 + venues.length) % venues.length)} aria-label="Предыдущая фотография"><Icon name="left" size={20}/></button><button className="icon-button" onClick={() => setIndex(previous => (previous + 1) % venues.length)} aria-label="Следующая фотография"><Icon name="right" size={20}/></button></div>
     </div>
   </div>;
@@ -191,7 +193,7 @@ export default function App() {
 
       <section className="training section" id="program" aria-labelledby="training-title"><div className="container"><div className="section-label">Программа</div><div className="section-heading"><h2 id="training-title">От первого паса<br/>к настоящей игре.</h2><p className="muted">Четыре основы развития юного футболиста.<br/>В основе всего любовь к игре.</p></div><div className="training-grid">{methodology.map(item => <article className={`training-card card-${item.type}`} key={item.type}><div className="card-top"><span>{item.label}</span></div><PitchArt type={item.type === 'positive' ? 'first' : item.type}/><div className="card-body"><h3>{item.title}</h3><p>{item.description}</p></div></article>)}</div></div></section>
 
-      <section className="venues-section section container" id="venues" aria-labelledby="venues-title"><div className="section-label">Залы</div><div className="section-heading"><h2 id="venues-title">Своя команда.<br/>Своё поле.</h2><p className="muted">Все группы тренируются в зале.<br/>Москва, Сиреневый бульвар, 4.</p></div><VenueGallery/></section>
+      <section className="venues-section section container" id="venues" aria-labelledby="venues-title"><div className="section-label">Зал</div><div className="section-heading"><h2 id="venues-title">Своя команда.<br/>Своё поле.</h2><p className="muted">Все группы тренируются в зале.<br/>Москва, Сиреневый бульвар, 4.</p></div><VenueGallery/></section>
 
       <section className="schedule-section section" id="schedule" aria-labelledby="schedule-title"><div className="container"><div className="section-label">Расписание</div><div className="section-heading"><h2 id="schedule-title">Футбол в ритме<br/>вашей недели.</h2><p className="muted">Три тренировки в неделю.<br/>Выберите возрастную группу.</p></div><Schedule/><p className="schedule-note">Перед первым посещением согласуйте тренировку с менеджером.</p></div></section>
 

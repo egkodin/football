@@ -314,8 +314,8 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .gallery-controls { display: flex; gap: 8px; }
 .gallery-controls button { color: var(--ink); border-color: #7b8b74; background: transparent; }
 .gallery-controls button:hover { background: var(--brand-green); border-color: var(--brand-green); color: white; }
-.venue-thumbnails { display: flex; gap: 12px; }
-.venue-thumbnails button { padding: 3px; width: 132px; aspect-ratio: 3 / 2; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: transparent; opacity: .75; }
+.venue-thumbnails { display: flex; flex-wrap: wrap; gap: 12px; }
+.venue-thumbnails button { flex-shrink: 0; padding: 3px; width: 132px; aspect-ratio: 3 / 2; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: transparent; opacity: .75; }
 .venue-thumbnails button.active { opacity: 1; border-color: var(--brand-green); }
 .venue-thumbnails img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 5px; }
 .schedule-section { background: #e9eee3; }
@@ -393,6 +393,8 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .card-body h3 { font-size: 25px; }
   .pitch-art { max-height: 225px; }
   .coach-layout { gap: 55px; }
+  .venue-footer { grid-template-columns: minmax(0, 1fr) auto; }
+  .venue-thumbnails { grid-column: 1 / -1; grid-row: 2; }
   .schedule-tabs button { padding: 20px; }
   .schedule-tabs strong { font-size: 20px; }
   .schedule-days strong { font-size: 18px; }

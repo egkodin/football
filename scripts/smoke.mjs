@@ -46,6 +46,11 @@ try {
   await context.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><title>Карта: проверка встраивания</title><body>Яндекс Карты</body></html>' }));
   const page = await context.newPage();
   const errors = [];
+  const galleryRequests = [];
+  page.on('request', request => {
+    const path = new URL(request.url()).pathname;
+    if (/hall-\d+-(?:768|1600)\.webp$/.test(path)) galleryRequests.push(path);
+  });
   page.on('pageerror', error => errors.push(error.message));
   const response = await page.goto(process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });
   assert.equal(response.status(), 200);
@@ -78,9 +83,20 @@ try {
   for (let y = 0; y < await page.evaluate(() => document.body.scrollHeight); y += 700) { await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(50); }
   await page.waitForFunction(() => [...document.querySelectorAll('img')].every(img => img.complete && img.naturalWidth > 0));
   assert(await page.locator('img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)));
-  const upscaledPhotos = page.locator('.coach-photo-wrap > img, .venue-thumbnails img');
-  assert.equal(await upscaledPhotos.count(), 4);
-  assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.currentSrc.includes('methodist-portrait') ? img.naturalWidth > 358 : img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'Both coaches and both halls must use higher-resolution replacements');
+  const upscaledPhotos = page.locator('.coach-photo-wrap > img');
+  assert.equal(await upscaledPhotos.count(), 2);
+  assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.currentSrc.includes('methodist-portrait') ? img.naturalWidth > 358 : img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'Both coaches must use higher-resolution replacements');
+  assert.equal(await page.locator('.venue-thumbnails img').count(), 4);
+  assert(await page.locator('.venue-thumbnails img').evaluateAll(images => images.every(img => img.currentSrc.endsWith('-thumb.webp') && img.naturalWidth === 320 && img.naturalHeight === 213)), 'Thumbnails must use small dedicated files');
+  assert(galleryRequests.length > 0 && galleryRequests.every(path => /hall-1-(?:768|1600)\.webp$/.test(path)), 'Unselected full-size photos must not load with the gallery');
+  for (let id = 1; id <= 4; id++) {
+    for (const variant of ['768', '1600', 'thumb']) {
+      const file = readFileSync(new URL(`../public/images/hall-${id}-${variant}.webp`, import.meta.url));
+      assert.equal(file.subarray(0, 4).toString(), 'RIFF');
+      assert.equal(file.subarray(8, 12).toString(), 'WEBP');
+      assert(file.length < (variant === 'thumb' ? 12000 : variant === '768' ? 70000 : 300000), 'Gallery files must stay within the byte budget');
+    }
+  }
   assert((await page.locator('.hero-photo').getAttribute('src')).endsWith('hero-training-uniform.jpg'), 'Use the first photo with the corrected uniform');
   assert.equal(await page.locator('.brand-crest').count(), 2);
   const map = page.locator('.address-map');
@@ -168,8 +184,19 @@ try {
   assert.equal(await page.getByRole('tab', { name: '9–11 лет Старшая группа' }).getAttribute('aria-selected'), 'true');
   await page.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
   assert.equal(await page.getByRole('button', { name: 'Показать фото 2: Спортивный зал' }).getAttribute('aria-pressed'), 'true');
-  assert.equal(await page.locator('.venue-thumbnails button').count(), 2);
+  assert.equal(await page.locator('.venue-thumbnails button').count(), 4);
   assert.equal(await page.locator('.venue-overlay h3').innerText(), 'Спортивный зал');
+  for (const photo of [3, 4]) {
+    await page.getByRole('button', { name: `Показать фото ${photo}: Спортивный зал` }).click();
+    await page.waitForFunction(photo => {
+      const img = document.querySelector('.venue-main > img[data-active="true"]');
+      return img?.dataset.state === 'ready' && img.currentSrc.includes(`hall-${photo}-`);
+    }, photo);
+    assert.equal(await page.locator('.venue-overlay > span').innerText(), `0${photo} / 04`);
+    await page.waitForTimeout(350);
+    await page.locator('.venue-gallery').screenshot({ path: `${out}/gallery-photo-${photo}.png` });
+  }
+  await page.getByRole('button', { name: 'Показать фото 2: Спортивный зал' }).click();
   // Fast input must leave the final selected photo visible after its transition.
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
   await page.waitForTimeout(400);
@@ -274,14 +301,15 @@ try {
   await fades.setViewportSize({ width: 390, height: 844 });
   let releaseNext;
   const nextImageGate = new Promise(resolve => { releaseNext = resolve; });
-  await fades.route('**/images/hall-2-upscaled.jpg', async route => { await nextImageGate; await route.continue(); });
+  await fades.route(/\/images\/hall-2-(?:768|1600)\.webp$/, async route => { await nextImageGate; await route.continue(); });
   await fades.goto(page.url(), { waitUntil: 'domcontentloaded' });
   await fades.locator('.venue-main').scrollIntoViewIfNeeded();
   await fades.waitForFunction(() => document.querySelector('.venue-main > img[data-active="true"]')?.dataset.state === 'ready');
+  assert((await fades.locator('.venue-main > img[data-active="true"]').evaluate(img => img.currentSrc)).endsWith('hall-1-768.webp'), 'Mobile must select the smaller responsive image');
   await fades.waitForTimeout(700);
   await fades.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
   await fades.getByRole('status').filter({ hasText: 'Загружаем фотографию' }).waitFor();
-  assert((await fades.locator('.venue-main > img[data-active="true"]').getAttribute('src')).includes('hall-1-upscaled'));
+  assert((await fades.locator('.venue-main > img[data-active="true"]').getAttribute('src')).includes('hall-1-'));
   assert.equal(await fades.locator('.venue-main > img[data-active="true"]').evaluate(el => getComputedStyle(el).opacity), '1', 'Previous photo must remain opaque while the next loads');
   releaseNext();
   await fades.waitForFunction(() => [...document.querySelectorAll('.venue-main > img')].every(img => img.dataset.state === 'ready'));
@@ -318,7 +346,7 @@ try {
   let releaseImage;
   let blockImage = true;
   const imageGate = new Promise(resolve => { releaseImage = resolve; });
-  await gallery.route('**/images/hall-1-upscaled.jpg', async route => {
+  await gallery.route(/\/images\/hall-1-(?:768|1600)\.webp$/, async route => {
     if (blockImage) { await imageGate; await route.abort(); }
     else await route.continue();
   });

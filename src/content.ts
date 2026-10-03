@@ -45,9 +45,18 @@ export const plans = [
 ];
 
 export const venues = [
-  { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-1-upscaled.jpg'), width: 1813, height: 868 },
-  { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-2-upscaled.jpg'), width: 1814, height: 867 },
-];
+  { id: 1, width: 1600, height: 766 },
+  { id: 2, width: 1600, height: 765 },
+  { id: 3, width: 1600, height: 1200 },
+  { id: 4, width: 1600, height: 1200 },
+].map(venue => ({
+  ...venue,
+  title: 'Спортивный зал',
+  label: 'Зал',
+  image: assetPath(`/images/hall-${venue.id}-1600.webp`),
+  srcSet: `${assetPath(`/images/hall-${venue.id}-768.webp`)} 768w, ${assetPath(`/images/hall-${venue.id}-1600.webp`)} 1600w`,
+  thumbnail: assetPath(`/images/hall-${venue.id}-thumb.webp`),
+}));
 
 export const faqs = [
   { question: 'С какого возраста можно заниматься?', answer: 'В клубе тренируются дети от 3 до 11 лет. Есть младшая группа 3–5 лет, средняя 6–8 лет и старшая 9–11 лет. Занятия учитывают возраст и уровень подготовки ребёнка.' },
