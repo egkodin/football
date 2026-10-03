@@ -54,3 +54,34 @@ This is the front-on view of the inflatable football dome: a centered goal at th
 Use case: precise-object-edit. Strict faithful super-resolution restoration of the attached ORIGINAL real venue photograph for a football school website. Increase native image resolution and authentic detail as much as possible, target 2560 x 1224 landscape or higher with the exact original 1280:612 aspect ratio. Match the original scene, viewpoint, framing, layout, illumination and colors. ONLY resolve genuine material texture and remove JPEG compression artifacts, without oversharpening or plastic-looking surfaces. Keep every existing object and its original location, all floor court lines, all wear, wall shapes, ceiling seams, lights, goalposts and nets. Do not renovate, clean, add people or objects, remove clutter, redesign architecture, shift perspective, crop, relight or recolor. This must remain the same real photograph, not a new idealized sports facility.
 This is the wide oblique view of the inflatable football dome with the far goal slightly left of center and a large white circle sweeping across the right foreground. Preserve the scuffed green floor, torn and patched places in the dark green wall on the left, small training goal next to the larger goal, white fabric roof seams and lamps, benches and all existing items. Do not repair or hide the actual patches, tears or wear.
 ```
+
+
+## Новые изображения, 3 октября 2026
+
+Обработаны встроенным imagegen. Исходные фотографии и прежний первый кадр сохранены; новые файлы подключены в App.tsx. Тренер-методист: Ираклий Шалвович Геленава.
+
+| Файл | Исходный размер | Фактический результат |
+| --- | --- | --- |
+| public/images/coach-methodist-field-upscaled.jpg | 537 × 389 | 1474 × 1067 |
+| public/images/coach-methodist-portrait-upscaled.jpg | 358 × 358 | 1254 × 1254 |
+| public/images/hero-training-uniform.jpg | 1254 × 1254 | 1254 × 1254 |
+
+Изменена только форма трёх детей по присланному образцу. Нейросетевая обработка фотографий тренера восстанавливает детали, поэтому не является побитовым увеличением оригинала.
+
+### hero
+
+```text
+Use case: identity-preserve / precise-object-edit. Edit target: image 1 is the football school hero photograph with three children. Image 2 is ONLY the uniform design reference. Change ONLY the football shirts and shorts of all three children to match the reference exactly: rich green short-sleeve shirt with yellow collar and sleeve cuffs, central solid paired vertical yellow stripes with thin green split, flanking narrower vertical yellow stripes that fade around the mid-chest/waist as shown; plain green shorts with yellow hems, without side stripes. White knee socks. Remove existing yellow shoulder stripes and shorts side stripes. Transfer the flat kit design onto realistic draped fabric with natural folds. Preserve each child's exact face, identity, hair, skin, body, pose, shoes, positions, ball, pitch, goal, cones, light, background blur, framing and original square composition. No text, logo, watermark, new people or other changes. Output a high resolution square photo.
+```
+
+### coachField
+
+```text
+Use case: identity-preserve. Faithful photographic super-resolution upscale of the supplied original 537 x 389 photograph, approximately 2148 x 1556 pixels. Strict restoration, same man with precisely unchanged facial identity, age, face shape, expression, gaze, hairline, hairstyle, skin, pose, proportions, black Adidas FFC jacket, exact existing logos/lettering, green pitch, trees, lighting and colors. Preserve original landscape aspect ratio and framing. Resolve fine hair/fabric detail and gently clean compression artifacts only. No beautification, retouching, reshaping, relighting, cropping, background replacement, new content or invented text.
+```
+
+### coachPortrait
+
+```text
+Use case: identity-preserve. Faithful photographic super-resolution upscale of the supplied original 358 x 358 square portrait, target approximately 1536 x 1536 pixels. Strict restoration: preserve exactly the same man's identity, age, face shape, eyes, brows, gaze, lips, neutral expression, hairstyle, hairline, stubble, natural skin features, shoulders, white sports polo with existing black stripes, pale gray-blue background, lighting, framing and colors. Only resolve genuine fine hair and fabric detail and gently remove JPEG artifacts. No beautification, skin smoothing, reshaping, new objects, cropping, relighting or restyling. Identical photograph at higher resolution.
+```

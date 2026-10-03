@@ -269,22 +269,27 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .partner-badge strong { color: var(--ink); font-weight: 600; }
 .partner-crest { display: block; width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
 .coach-section { background: #e9eee3; }
+.coaches-title { font-size: 13px; line-height: 1.5; letter-spacing: 0; font-weight: 600; }
+.coach-methodist { margin-top: 64px; padding-top: 64px; border-top: 1px solid #cbd4c6; }
+.coach-layout.coach-methodist { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 80px); }
+.coach-photo-wrap.coach-methodist-portrait { max-width: none; aspect-ratio: 1; }
+.coach-methodist .coach-copy h2 { font-size: clamp(36px, 3.8vw, 54px); line-height: 1.12; overflow-wrap: normal; }
+
 .coach-layout { display: grid; grid-template-columns: .85fr 1fr; gap: 96px; align-items: start; }
 .coach-photo-wrap { position: relative; max-width: 435px; background: #d4ddd0; overflow: hidden; aspect-ratio: .85; }
 .coach-photo-wrap img { width: 100%; height: 100%; object-fit: cover; object-position: center 27%; display: block; }
-.coach-license { position: absolute; bottom: 22px; left: 22px; padding: 9px 12px; background: var(--yellow); color: var(--ink); font-weight: 600; border-radius: 3px; }
+.coach-license { max-width: calc(100% - 44px); font-size: 11px; line-height: 1.6; position: absolute; bottom: 22px; left: 22px; padding: 9px 12px; background: var(--yellow); color: var(--ink); font-weight: 600; border-radius: 3px; }
 .coach-copy { padding-top: 7px; }
-.coach-copy h2 { letter-spacing: -.03em; margin: 21px 0; }
+.coach-copy h2 { overflow-wrap: anywhere; letter-spacing: -.03em; margin: 21px 0; }
 .coach-copy h2 > span { color: var(--brand-green); }
 .coach-intro { line-height: 1.8; }
 .coach-facts { display: grid; grid-template-columns: 1fr 1fr; gap: 26px; margin-top: 27px; border-top: 1px solid #cbd4c6; padding-top: 25px; }
 .coach-facts > div > span { text-transform: uppercase; letter-spacing: 1px; color: var(--brand-green); font-weight: 600; }
 .coach-facts p { line-height: 1.8; color: var(--muted); }
 .coach-details { border-top: 1px solid #cbd4c6; border-bottom: 1px solid #cbd4c6; margin: 18px 0 24px; }
-.coach-details summary { cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 18px 0; list-style: none; }
-.coach-details summary::-webkit-details-marker { display: none; }
-.coach-details[open] summary .icon { transform: rotate(45deg); }
-.coach-details > div { color: var(--muted); line-height: 1.8; padding-bottom: 16px; }
+.coach-details-toggle { width: 100%; border: 0; background: transparent; text-align: left; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 0; }
+.coach-details[data-open='true'] .coach-details-toggle .icon { transform: rotate(45deg); }
+.coach-details-content { color: var(--muted); line-height: 1.8; padding-bottom: 16px; }
 .coach-details h3 { color: var(--ink); margin: 15px 0 5px; }
 .coach-details ul { padding-left: 16px; }
 .training { background: var(--paper); }
@@ -292,8 +297,9 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .card-top { padding-inline: 21px; }
 .card-body { padding-inline: 21px; }
 .venues-section { border-top: 1px solid var(--line); }
-.venue-gallery { display: grid; grid-template-columns: 1fr 132px; gap: 16px; }
+.venue-gallery { display: grid; gap: 20px; }
 .venue-main { position: relative; overflow: hidden; background: #dde4d7; aspect-ratio: 2.1; }
+.venue-footer { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; align-items: center; gap: 32px; }
 .venue-main > img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; }
 .venue-main > img[data-base='true'] { opacity: 1; z-index: 1; transition: none; }
 .venue-main > img[data-active='true'] { opacity: 1; z-index: 2; }
@@ -302,20 +308,16 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .venue-photo-state { position: absolute; inset: 12px auto auto 12px; max-width: calc(100% - 24px); z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; padding: 10px; background: #073c19f0; border-radius: 4px; color: var(--paper); text-align: center; font-size: 12px; line-height: 1.5; }
 .venue-photo-state p { margin: 0; }
 .venue-photo-state .button { min-height: 44px; padding: 12px 18px; }
-.venue-main::after { content: ''; position: absolute; inset: 0; z-index: 3; background: linear-gradient(180deg, transparent 45%, #102610c9); pointer-events: none; }
-.venue-overlay { position: absolute; bottom: 29px; left: 30px; right: 150px; width: fit-content; max-width: calc(100% - 180px); padding: 10px 12px; background: #073c19f0; border-radius: 4px; color: white; z-index: 1; }
-.venue-overlay { z-index: 4; }
-.venue-main:has(.venue-photo-state) .venue-overlay { padding: 6px 8px; }
-.venue-main:has(.venue-photo-state) .venue-overlay h3 { font-size: 14px; margin-block: 4px; }
-.venue-overlay h3 { font-size: 24px; letter-spacing: -.03em; font-weight: 600; margin: 9px 0; }
-.venue-overlay > span:last-child { opacity: 1; }
-.gallery-controls { position: absolute; right: 27px; bottom: 30px; display: flex; gap: 8px; z-index: 4; }
-.gallery-controls button { color: var(--paper); border-color: #ffffff60; background: #fff1; }
-.gallery-controls button:hover { background: var(--yellow); color: var(--ink); }
-.venue-thumbnails { display: flex; flex-direction: column; justify-content: space-between; gap: 10px; }
-.venue-thumbnails button { padding: 0; border: 2px solid transparent; border-radius: 4px; overflow: hidden; flex: 1; background: transparent; min-height: 0; opacity: .65; }
+.venue-overlay { display: flex; flex-direction: column; gap: 8px; }
+.venue-overlay h3 { font-size: 24px; letter-spacing: -.03em; font-weight: 600; margin: 0; }
+.venue-overlay > span:last-child { color: var(--muted); font-variant-numeric: tabular-nums; }
+.gallery-controls { display: flex; gap: 8px; }
+.gallery-controls button { color: var(--ink); border-color: #7b8b74; background: transparent; }
+.gallery-controls button:hover { background: var(--brand-green); border-color: var(--brand-green); color: white; }
+.venue-thumbnails { display: flex; gap: 12px; }
+.venue-thumbnails button { padding: 3px; width: 132px; aspect-ratio: 3 / 2; border: 2px solid transparent; border-radius: 10px; overflow: hidden; background: transparent; opacity: .75; }
 .venue-thumbnails button.active { opacity: 1; border-color: var(--brand-green); }
-.venue-thumbnails img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.venue-thumbnails img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 5px; }
 .schedule-section { background: #e9eee3; }
 .schedule-tabs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
 .schedule-tabs button { display: flex; align-items: center; justify-content: space-between; gap: 15px; border: 1px solid #bdcdb5; background: transparent; padding: 24px; text-align: left; border-radius: 4px; }
@@ -406,8 +408,11 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .coach-copy .eyebrow { font-size: 8px; }
   .coach-photo-wrap { aspect-ratio: .66; }
   .coach-license { left: 14px; }
-  .venue-gallery { grid-template-columns: 1fr; }
-  .venue-thumbnails { flex-direction: row; height: 65px; }
+  .coach-layout.coach-methodist { grid-template-columns: 1fr; gap: 28px; }
+  .coach-photo-wrap.coach-methodist-portrait { max-width: 420px; }
+  .coach-methodist .coach-copy h2 { font-size: 46px; }
+  .venue-footer { gap: 20px; }
+  .venue-thumbnails button { width: 104px; }
   .venue-main { aspect-ratio: 1.9; }
   .schedule-panel { grid-template-columns: 1fr; padding: 27px; gap: 26px; }
   .schedule-description { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
@@ -439,18 +444,21 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .coach-layout { grid-template-columns: 1fr; gap: 30px; }
   .coach-photo-wrap { max-width: none; aspect-ratio: 1.08; }
   .coach-photo-wrap img { object-position: center 24%; }
+  .coach-photo-wrap.coach-methodist-portrait { max-width: none; }
+  .coach-methodist { margin-top: 44px; padding-top: 44px; }
   .coach-license { left: 20px; bottom: 20px; }
-  .coach-copy h2 { letter-spacing: -.03em; margin: 21px 0; }
+  .coach-copy h2 { overflow-wrap: anywhere; letter-spacing: -.03em; margin: 21px 0; }
   .coach-copy .eyebrow { font-size: 9px; }
   .coach-facts { grid-template-columns: 1fr 1fr; gap: 20px; }
   .coach-copy .text-link { font-size: 11px; }
   .training-grid { grid-template-columns: 1fr; }
   .card-body h3 { font-size: 28px; }
   .venue-main { aspect-ratio: 1.3; }
-  .venue-overlay { bottom: 23px; left: 21px; right: 25px; }
-  .venue-overlay h3 { font-size: 18px; max-width: 215px; margin-bottom: 13px; }
-  .gallery-controls { right: 20px; bottom: 20px; }
-  .venue-thumbnails { height: 45px; gap: 6px; }
+  .coach-methodist .coach-copy h2 { font-size: clamp(32px, 7.8vw, 46px); }
+  .venue-footer { grid-template-columns: minmax(0, 1fr) auto; gap: 20px 12px; }
+  .venue-overlay h3 { font-size: 20px; }
+  .venue-thumbnails { grid-column: 1 / -1; grid-row: 2; gap: 10px; }
+  .venue-thumbnails button { width: 112px; }
   .schedule-tabs { gap: 7px; }
   .schedule-tabs button { padding: 15px 11px; }
   .schedule-tabs strong { font-size: 18px; }
@@ -499,7 +507,7 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .brand > svg { width: 25px; }
   .header-cta { font-size: 9px; }
   .coach-facts { grid-template-columns: 1fr; }
-  .venue-overlay h3 { font-size: 17px; max-width: 165px; }
+  .venue-overlay h3 { font-size: 18px; }
   .contact-phone { font-size: 21px; }
   .footer-invitation { font-size: 22px; }
 }
@@ -627,11 +635,7 @@ h2 { letter-spacing: -.03em; text-wrap: balance; }
   .schedule-days > div { gap: 8px; }
   .price-card li, .price-card .button { font-size: 13px; }
   .price-card ul { min-height: 0; }
-  .gallery-controls { right: 16px; bottom: 20px; }
   .gallery-controls .icon-button { width: 44px; height: 44px; }
-  .venue-overlay { right: 122px; left: 20px; max-width: calc(100% - 142px); }
-  .venue-overlay h3 { font-size: 17px; }
-  .venue-thumbnails { height: 54px; }
   .address-info .eyebrow, .dialog-fields .field-label > span { font-size: 11px; }
   .enrollment-dialog { padding: 32px 22px 25px; }
   .enrollment-dialog > .eyebrow { max-width: 220px; font-size: 9px; }
@@ -678,11 +682,7 @@ h2 { letter-spacing: -.03em; text-wrap: balance; }
   .enrollment-dialog[open]::backdrop { animation: backdrop-arrival 220ms ease-out; }
   .collapse { transition: grid-template-rows 260ms var(--ease-arrive), opacity 180ms ease-out, visibility 0s linear 260ms; }
   .collapse[data-open='true'] { transition-duration: 320ms, 220ms, 0s; transition-delay: 0s; }
-  .coach-details summary .icon, .message-toggle .icon { transition: transform 260ms var(--ease-arrive); }
-  @supports (interpolate-size: allow-keywords) {
-    .coach-details::details-content { interpolate-size: allow-keywords; block-size: 0; overflow: clip; opacity: 0; transition: block-size 260ms var(--ease-arrive), opacity 180ms ease-out, content-visibility 260ms allow-discrete; }
-    .coach-details[open]::details-content { block-size: auto; opacity: 1; transition-duration: 320ms, 220ms, 320ms; }
-  }
+  .coach-details-toggle .icon, .message-toggle .icon { transition: transform 260ms var(--ease-arrive); }
   .button, .icon-button, .hero-more { transition: background-color 180ms ease-out, border-color 180ms ease-out, transform 220ms var(--ease-arrive); }
   .button .icon-up-right, .text-link .icon-up-right, .hero-more .icon { transition: transform 240ms var(--ease-arrive); }
   .venue-thumbnails button, .schedule-tabs button { transition: opacity 200ms ease-out, background-color 200ms ease-out, border-color 200ms ease-out, color 200ms ease-out; }

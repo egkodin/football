@@ -17,7 +17,7 @@ export const school = {
 
 export const navigation = [
   { label: 'О клубе', href: '#about' },
-  { label: 'Тренер', href: '#coaches' },
+  { label: 'Тренеры', href: '#coaches' },
   { label: 'Программа', href: '#program' },
   { label: 'Залы', href: '#venues' },
   { label: 'Расписание', href: '#schedule' },
@@ -33,28 +33,25 @@ export const methodology = [
 ];
 
 export const groups = [
-  { id: 'junior', label: 'Младшая группа', ages: '3–5 лет', birthYears: '2021–2023 г. р.', time: '18:00–19:00', venue: 'Модуль А' },
+  { id: 'junior', label: 'Младшая группа', ages: '3–5 лет', birthYears: '2021–2023 г. р.', time: '18:00–19:00', venue: 'Зал' },
   { id: 'middle', label: 'Средняя группа', ages: '6–8 лет', birthYears: '2018–2020 г. р.', time: '19:00–20:00', venue: 'Зал' },
   { id: 'senior', label: 'Старшая группа', ages: '9–11 лет', birthYears: '2015–2017 г. р.', time: '19:00–20:00', venue: 'Зал' },
 ];
 
 export const plans = [
   { count: 4, title: 'Первый ритм', regular: 5800, price: 4500, perSession: 1125, freeze: false, featured: false },
-  { count: 8, title: 'Уверенный темп', regular: 9800, price: 7480, perSession: 935, freeze: true, featured: true },
-  { count: 12, title: 'Полная игра', regular: 10800, price: 9800, perSession: 817, freeze: true, featured: false },
+  { count: 8, title: 'Уверенный темп', regular: 9800, price: 7480, perSession: 935, freeze: true, featured: false },
+  { count: 12, title: 'Полная игра', regular: 10800, price: 9800, perSession: 817, freeze: true, featured: true },
 ];
 
 export const venues = [
   { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-1-upscaled.jpg'), width: 1813, height: 868 },
   { title: 'Спортивный зал', label: 'Зал', image: assetPath('/images/hall-2-upscaled.jpg'), width: 1814, height: 867 },
-  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-1-upscaled.jpg'), width: 1814, height: 867 },
-  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-2-upscaled.jpg'), width: 1814, height: 867 },
-  { title: 'Крытый футбольный модуль', label: 'Модуль А', image: assetPath('/images/module-3-upscaled.jpg'), width: 1814, height: 867 },
 ];
 
 export const faqs = [
   { question: 'С какого возраста можно заниматься?', answer: 'В клубе тренируются дети от 3 до 11 лет. Есть младшая группа 3–5 лет, средняя 6–8 лет и старшая 9–11 лет. Занятия учитывают возраст и уровень подготовки ребёнка.' },
-  { question: 'Когда проходят тренировки?', answer: 'По понедельникам, средам и пятницам. Младшая группа занимается с 18:00 до 19:00 в Модуле А. Средняя и старшая занимаются с 19:00 до 20:00 в зале.' },
+  { question: 'Когда проходят тренировки?', answer: 'По понедельникам, средам и пятницам. Младшая группа занимается с 18:00 до 19:00. Средняя и старшая занимаются с 19:00 до 20:00. Все группы тренируются в зале.' },
   { question: 'Нужен ли опыт игры в футбол?', answer: 'Занятия проходят в игровой форме с учётом возраста и уровня подготовки ребёнка.' },
   { question: 'Как записаться на бесплатную тренировку?', answer: 'Напишите в Telegram или Max клуба либо позвоните по номеру +7 985 335 40 92.' },
 ];

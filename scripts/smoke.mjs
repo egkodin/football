@@ -13,7 +13,7 @@ async function checkTouchTargets(page) {
   assert.deepEqual(small, [], 'Every visible control must have a 44 × 44 px target');
 }
 async function checkDisclosure(page, target, trigger) {
-  await page.locator(trigger).scrollIntoViewIfNeeded();
+  await page.locator(trigger).first().scrollIntoViewIfNeeded();
   for (const opening of [true, false]) {
     const heights = await page.evaluate(async ({ target, trigger }) => {
       const content = document.querySelector(target);
@@ -39,7 +39,7 @@ async function checkDisclosure(page, target, trigger) {
     }
   }, trigger);
   await page.waitForTimeout(350);
-  assert(await page.locator(target).evaluate(el => el.matches('details') ? !el.open : el.inert && el.getBoundingClientRect().height === 0), `${target} must settle closed after rapid input`);
+  assert(await page.locator(target).first().evaluate(el => el.matches('details') ? !el.open : el.inert && el.getBoundingClientRect().height === 0), `${target} must settle closed after rapid input`);
 }
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
@@ -79,9 +79,9 @@ try {
   await page.waitForFunction(() => [...document.querySelectorAll('img')].every(img => img.complete && img.naturalWidth > 0));
   assert(await page.locator('img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)));
   const upscaledPhotos = page.locator('.coach-photo-wrap > img, .venue-thumbnails img');
-  assert.equal(await upscaledPhotos.count(), 6);
-  assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'All six photographs must use higher-resolution replacements');
-  assert((await page.locator('.hero-photo').getAttribute('src')).endsWith('hero-training.jpg'), 'Keep the first photo unchanged');
+  assert.equal(await upscaledPhotos.count(), 4);
+  assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.currentSrc.includes('methodist-portrait') ? img.naturalWidth > 358 : img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'Both coaches and both halls must use higher-resolution replacements');
+  assert((await page.locator('.hero-photo').getAttribute('src')).endsWith('hero-training-uniform.jpg'), 'Use the first photo with the corrected uniform');
   assert.equal(await page.locator('.brand-crest').count(), 2);
   const map = page.locator('.address-map');
   const mapUrl = new URL(await map.getAttribute('src'));
@@ -97,9 +97,45 @@ try {
   await page.screenshot({ path: `${out}/desktop.png`, fullPage: true });
   await page.screenshot({ path: `${out}/desktop-hero.png` });
   for (const id of ['coaches', 'program', 'schedule', 'pricing', 'contacts']) await page.locator(`#${id}`).screenshot({ path: `${out}/${id}.png` });
+  await page.locator('.coach-methodist').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await page.locator('.coach-methodist').screenshot({ path: `${out}/methodist-desktop.png` });
+  await page.locator('#venues').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await page.locator('#venues').screenshot({ path: `${out}/venues-desktop.png` });
   console.log('School sections, palette, crest and images: passed');
+  assert.equal(await page.locator('#coaches .coach-layout').count(), 2);
+  assert.equal(await page.locator('#coaches-title').innerText(), 'Тренеры');
+  assert.equal(await page.locator('#coach-title').innerText(), 'Артем\nТрофимов');
+  assert.equal(await page.locator('.coach-license').innerText(), 'ЛИЦЕНЗИЯ C–UEFA');
+  assert.equal(await page.locator('.coach-copy .eyebrow').first().innerText(), 'СТАРШИЙ ТРЕНЕР');
+  assert.equal(await page.locator('#methodist-title').innerText(), 'Ираклий Шалвович\nГеленава');
+  assert.equal(await page.locator('.coach-methodist img').count(), 1);
+  assert((await page.locator('.coach-methodist img').getAttribute('src')).endsWith('coach-methodist-portrait-upscaled.jpg'));
+  const methodistText = await page.locator('.coach-methodist').innerText();
+  for (const text of ['МФПА', '1987', 'Мастер спорта по футболу СССР']) assert(methodistText.includes(text));
+  await page.locator('.coach-details-toggle').first().click();
+  await page.waitForTimeout(350);
+  const artemExperience = await page.locator('.coach-details').first().innerText();
+  assert(artemExperience.includes('2024: стажировка'));
+  assert(!/2023|2026|2024–/.test(artemExperience));
+  await page.locator('.coach-details-toggle').first().click();
+  await page.locator('.coach-details-toggle').nth(1).click();
+  await page.waitForTimeout(350);
+  const methodistCareer = await page.locator('.coach-details').nth(1).innerText();
+  for (const text of ['Динамо Сухуми', 'ФК Цхуми', 'Barca Academy Moscow', 'Академия FFC', 'Академия Витязь', 'ДЮФА ЦСКА', 'Школа Динамо']) assert(methodistCareer.includes(text));
+  await page.locator('.coach-details-toggle').nth(1).click();
+  assert(!/модул|администратор|Артём/i.test(await page.locator('main').innerText()));
+  assert.equal(await page.locator('.price-card.featured').count(), 1);
+  assert((await page.locator('.price-card.featured .price-current').innerText()).replaceAll(/\s/g, '').includes('9800'));
+  assert.equal(await page.locator('.price-card').nth(1).evaluate(el => el.classList.contains('featured')), false);
+  await page.getByRole('tab', { name: '3–5 лет Младшая группа' }).click();
+  assert.equal(await page.getByRole('tabpanel').getByText('Зал', { exact: true }).count(), 3);
+  console.log('Coach roles and histories, hall-only schedule and 12-session pricing emphasis: passed');
+
   const trigger = page.getByRole('button', { name: 'На бесплатную тренировку', exact: true });
   await trigger.click();
+  assert((await page.locator('.dialog-intro').innerText()).includes('для менеджера'));
   await page.getByLabel('Возраст ребёнка').selectOption('7');
   await page.getByLabel('Ваше имя').fill('Анна');
   await page.getByText('Уже тренировался', { exact: true }).click();
@@ -132,8 +168,8 @@ try {
   assert.equal(await page.getByRole('tab', { name: '9–11 лет Старшая группа' }).getAttribute('aria-selected'), 'true');
   await page.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
   assert.equal(await page.getByRole('button', { name: 'Показать фото 2: Спортивный зал' }).getAttribute('aria-pressed'), 'true');
-  await page.getByRole('button', { name: 'Показать фото 3: Крытый футбольный модуль' }).click();
-  assert.equal(await page.locator('.venue-overlay h3').innerText(), 'Крытый футбольный модуль');
+  assert.equal(await page.locator('.venue-thumbnails button').count(), 2);
+  assert.equal(await page.locator('.venue-overlay h3').innerText(), 'Спортивный зал');
   // Fast input must leave the final selected photo visible after its transition.
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
   await page.waitForTimeout(400);
@@ -148,6 +184,20 @@ try {
     await page.waitForTimeout(100);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow at ${width}`);
     assert(await page.locator('h1').evaluate(el => el.scrollWidth <= el.clientWidth), `Heading overflow at ${width}`);
+    assert(await page.locator('#methodist-title').evaluate(el => el.scrollWidth <= el.clientWidth), `Coach name overflow at ${width}`);
+    const galleryLayout = await page.locator('.venue-gallery').evaluate(el => {
+      const frame = el.querySelector('.venue-main').getBoundingClientRect();
+      const caption = el.querySelector('.venue-overlay').getBoundingClientRect();
+      const controls = el.querySelector('.gallery-controls').getBoundingClientRect();
+      const thumbnails = [...el.querySelectorAll('.venue-thumbnails button')].map(button => button.getBoundingClientRect());
+      return caption.top >= frame.bottom && controls.top >= frame.bottom && caption.right <= controls.left && thumbnails.every(thumb => thumb.top >= frame.bottom && thumb.width / thumb.height >= 1.4 && thumb.width / thumb.height <= 1.6);
+    });
+    assert(galleryLayout, `Gallery captions, controls and landscape thumbnails must fit below the photo at ${width}`);
+    assert(await page.locator('.coach-methodist-portrait').evaluate(el => {
+      const frame = el.getBoundingClientRect();
+      const portrait = el.querySelector('img').getBoundingClientRect();
+      return Math.abs(frame.width - frame.height) < 1 && portrait.width === frame.width && portrait.height === frame.height;
+    }), `Coach portrait must fill its square frame at ${width}`);
     await checkTouchTargets(page);
   }
   await page.setViewportSize({ width: 390, height: 844 });
@@ -158,6 +208,12 @@ try {
   await page.waitForFunction(() => scrollY === 0);
   await page.screenshot({ path: `${out}/mobile-hero.png` });
   await page.screenshot({ path: `${out}/mobile.png`, fullPage: true });
+  await page.locator('.coach-methodist').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await page.locator('.coach-methodist').screenshot({ path: `${out}/methodist-mobile.png` });
+  await page.locator('#venues').scrollIntoViewIfNeeded();
+  await page.waitForTimeout(500);
+  await page.locator('#venues').screenshot({ path: `${out}/venues-mobile.png` });
   await page.getByRole('button', { name: 'На бесплатную тренировку', exact: true }).click();
   await page.locator('dialog').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
   await checkTouchTargets(page);
@@ -190,11 +246,14 @@ try {
   await disclosures.goto(page.url(), { waitUntil: 'load' });
   await disclosures.evaluate(() => document.fonts.ready);
   await disclosures.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
-  await checkDisclosure(disclosures, '#faq-answer-1', '#faq-question-1');
-  await checkDisclosure(disclosures, '.coach-details', '.coach-details summary');
-  await disclosures.locator('.coach-details summary').press('Enter');
-  assert.equal(await disclosures.locator('.coach-details').getAttribute('open'), '');
-  await disclosures.locator('.coach-details summary').press('Enter');
+  await disclosures.locator('#faq-question-0').click();
+  await disclosures.waitForTimeout(350);
+  for (let i = 0; i < 4; i++) await checkDisclosure(disclosures, `#faq-answer-${i}`, `#faq-question-${i}`);
+  await checkDisclosure(disclosures, '#artem-career', '#artem-career-toggle');
+  await checkDisclosure(disclosures, '#methodist-career', '#methodist-career-toggle');
+  await disclosures.locator('.coach-details-toggle').first().press('Enter');
+  assert.equal(await disclosures.locator('.coach-details-toggle').first().getAttribute('aria-expanded'), 'true');
+  await disclosures.locator('.coach-details-toggle').first().press('Enter');
   await disclosures.waitForTimeout(350);
   await checkDisclosure(disclosures, '.menu-collapse', '.menu-button');
   await disclosures.locator('.menu-button').focus();
@@ -234,7 +293,7 @@ try {
     const transitions = [];
     for (let i = 0; i < 5; i++) {
       const before = samples.length;
-      frame.querySelector(i % 2 === 0 ? 'button[aria-label="Предыдущая фотография"]' : 'button[aria-label="Следующая фотография"]').click();
+      frame.closest('.venue-gallery').querySelector(i % 2 === 0 ? 'button[aria-label="Предыдущая фотография"]' : 'button[aria-label="Следующая фотография"]').click();
       const start = performance.now();
       await new Promise(resolve => {
         function sample() {
