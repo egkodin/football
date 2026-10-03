@@ -5,8 +5,45 @@ const { chromium } = createRequire(import.meta.url)(process.env.PLAYWRIGHT_PATH 
 const out = process.env.FOOTBALL_SCREENSHOTS || '/tmp/football-smoke';
 mkdirSync(out, { recursive: true });
 const browser = await chromium.launch({ headless: true, ...(process.env.FOOTBALL_BROWSER ? { executablePath: process.env.FOOTBALL_BROWSER } : {}) });
+async function checkTouchTargets(page) {
+  const small = await page.locator('a, button, summary').evaluateAll(elements => elements.filter(el => el.getClientRects().length).map(el => {
+    const { width, height } = el.getBoundingClientRect();
+    return { text: el.textContent.trim().slice(0, 50), width, height };
+  }).filter(el => el.width < 44 || el.height < 44));
+  assert.deepEqual(small, [], 'Every visible control must have a 44 × 44 px target');
+}
+async function checkDisclosure(page, target, trigger) {
+  await page.locator(trigger).scrollIntoViewIfNeeded();
+  for (const opening of [true, false]) {
+    const heights = await page.evaluate(async ({ target, trigger }) => {
+      const content = document.querySelector(target);
+      const samples = [content.getBoundingClientRect().height];
+      document.querySelector(trigger).click();
+      const start = performance.now();
+      await new Promise(resolve => {
+        function sample() {
+          samples.push(content.getBoundingClientRect().height);
+          if (performance.now() - start < 400) requestAnimationFrame(sample); else resolve();
+        }
+        requestAnimationFrame(sample);
+      });
+      return samples;
+    }, { target, trigger });
+    assert(new Set(heights.map(Math.round)).size > 2, `${target} must animate height in both directions`);
+    assert(opening ? heights.at(-1) > heights[0] : heights.at(-1) < heights[0]);
+  }
+  await page.evaluate(async trigger => {
+    for (let i = 0; i < 6; i++) {
+      document.querySelector(trigger).click();
+      await new Promise(requestAnimationFrame);
+    }
+  }, trigger);
+  await page.waitForTimeout(350);
+  assert(await page.locator(target).evaluate(el => el.matches('details') ? !el.open : el.inert && el.getBoundingClientRect().height === 0), `${target} must settle closed after rapid input`);
+}
 try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  await context.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><title>Карта: проверка встраивания</title><body>Яндекс Карты</body></html>' }));
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
@@ -17,7 +54,7 @@ try {
     const style = getComputedStyle(el);
     return style.animationName === 'none' && style.transform === 'none' && style.clipPath === 'none' && style.opacity === '1';
   })), 'First screen must be fully visible without entrance animations');
-  await page.waitForLoadState('networkidle');
+  await page.locator('.hero-photo').evaluate(img => img.decode());
   await page.evaluate(() => document.fonts.ready);
   const masks = await page.locator('.icon').evaluateAll(elements => [...new Set(elements.map(el => getComputedStyle(el).maskImage.match(/url\(["']?(.*?)["']?\)/)?.[1]))]);
   assert(masks.length >= 12, 'Page icons must use local masks');
@@ -33,19 +70,28 @@ try {
     assert.equal(png.readUInt32BE(16), 96);
     assert.equal(png.readUInt32BE(20), 96);
   }
-  assert.equal(await page.getByRole('link', { name: 'Иконки — Icons8' }).getAttribute('href'), 'https://icons8.com/');
+  assert.equal(await page.getByRole('link', { name: 'Иконки: Icons8' }).getAttribute('href'), 'https://icons8.com/');
   console.log('17 local Icons8 PNGs and attribution: passed');
   assert.equal(await page.locator('.hero-title-line').count(), 3);
   for (const id of ['about', 'coaches', 'program', 'venues', 'schedule', 'pricing', 'contacts']) assert.equal(await page.locator(`#${id}`).count(), 1);
   for (const [property, value] of Object.entries({ '--brand-green': '#11651a', '--yellow': '#ffdd2d', '--red': '#db320b' })) assert.equal(await page.evaluate(p => getComputedStyle(document.documentElement).getPropertyValue(p).trim(), property), value);
   for (let y = 0; y < await page.evaluate(() => document.body.scrollHeight); y += 700) { await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(50); }
-  await page.waitForLoadState('networkidle');
+  await page.waitForFunction(() => [...document.querySelectorAll('img')].every(img => img.complete && img.naturalWidth > 0));
   assert(await page.locator('img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)));
   const upscaledPhotos = page.locator('.coach-photo-wrap > img, .venue-thumbnails img');
   assert.equal(await upscaledPhotos.count(), 6);
   assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'All six photographs must use higher-resolution replacements');
   assert((await page.locator('.hero-photo').getAttribute('src')).endsWith('hero-training.jpg'), 'Keep the first photo unchanged');
   assert.equal(await page.locator('.brand-crest').count(), 2);
+  const map = page.locator('.address-map');
+  const mapUrl = new URL(await map.getAttribute('src'));
+  assert.equal(mapUrl.origin, 'https://yandex.ru');
+  assert.equal(mapUrl.pathname, '/map-widget/v1/');
+  assert.equal(mapUrl.searchParams.get('ll'), '37.760081,55.801081');
+  assert.equal(mapUrl.searchParams.get('pt'), '37.760081,55.801081,pm2rdm');
+  assert.equal(await map.getAttribute('title'), 'Яндекс Карты: Москва, Сиреневый бульвар, 4');
+  assert.equal(await map.getAttribute('loading'), 'lazy');
+  console.log('Yandex widget URL, source coordinates, title and lazy loading (provider stub): passed');
   await page.evaluate(() => scrollTo(0, 0));
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${out}/desktop.png`, fullPage: true });
@@ -79,7 +125,7 @@ try {
   await page.keyboard.press('Escape');
   console.log('Enrollment, encoded message, clipboard success/failure, Escape and focus: passed');
   await page.getByRole('button', { name: 'Когда проходят тренировки?' }).click();
-  assert(await page.locator('#faq-answer-1').isVisible());
+  await page.locator('#faq-answer-1').waitFor({ state: 'visible' });
   await page.getByRole('tab', { name: '6–8 лет Средняя группа' }).click();
   assert.equal(await page.getByRole('tabpanel').getByText('19:00–20:00', { exact: true }).count(), 3);
   await page.getByRole('tab', { name: '6–8 лет Средняя группа' }).press('ArrowRight');
@@ -92,7 +138,7 @@ try {
   for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
   await page.waitForTimeout(400);
   assert.equal(await page.getByRole('button', { name: 'Показать фото 1: Спортивный зал' }).getAttribute('aria-pressed'), 'true');
-  assert.equal(await page.locator('.venue-main > img').evaluate(el => getComputedStyle(el).opacity), '1');
+  assert.equal(await page.locator('.venue-main > img[data-active="true"]').evaluate(el => getComputedStyle(el).opacity), '1');
   await page.locator('.price-card').nth(1).getByRole('button', { name: 'Выбрать абонемент' }).click();
   assert((await page.locator('.selected-plan').innerText()).replaceAll(/\s/g, '').includes('7480'));
   await page.getByRole('button', { name: 'Закрыть', exact: true }).click();
@@ -102,24 +148,33 @@ try {
     await page.waitForTimeout(100);
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow at ${width}`);
     assert(await page.locator('h1').evaluate(el => el.scrollWidth <= el.clientWidth), `Heading overflow at ${width}`);
+    await checkTouchTargets(page);
   }
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.reload({ waitUntil: 'networkidle' });
+  await page.reload({ waitUntil: 'load' });
+  await page.evaluate(() => document.fonts.ready);
+  await page.locator('.hero-photo').evaluate(img => img.decode());
   await page.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; scrollTo(0, 0); });
   await page.waitForFunction(() => scrollY === 0);
   await page.screenshot({ path: `${out}/mobile-hero.png` });
   await page.screenshot({ path: `${out}/mobile.png`, fullPage: true });
-  await page.getByRole('button', { name: 'Открыть меню' }).click();
-  assert(await page.locator('#mobile-nav').isVisible());
+  await page.getByRole('button', { name: 'На бесплатную тренировку', exact: true }).click();
+  await page.locator('dialog').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+  await checkTouchTargets(page);
   await page.keyboard.press('Escape');
-  assert.equal(await page.locator('#mobile-nav').count(), 0);
+  await page.getByRole('button', { name: 'Открыть меню' }).click();
+  await page.locator('.menu-collapse').waitFor({ state: 'visible' });
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelector('.menu-collapse')?.getBoundingClientRect().height === 0);
+  assert.equal(await page.locator('.menu-collapse').getAttribute('inert'), '');
   await page.getByRole('button', { name: 'Открыть меню' }).click();
   await page.locator('#mobile-nav').getByRole('link', { name: 'Расписание' }).click();
-  assert.equal(await page.locator('#mobile-nav').count(), 0);
+  await page.waitForFunction(() => document.querySelector('.menu-collapse')?.getBoundingClientRect().height === 0);
+  assert.equal(await page.locator('.menu-collapse').getAttribute('inert'), '');
   for (const a of await page.locator('a[href^="#"]').all()) assert.equal(await page.locator(await a.getAttribute('href')).count(), 1);
   const reduced = await context.newPage();
   await reduced.emulateMedia({ reducedMotion: 'reduce' });
-  await reduced.goto(page.url(), { waitUntil: 'networkidle' });
+  await reduced.goto(page.url(), { waitUntil: 'load' });
   assert.equal(await reduced.locator('.hero-title-line').first().evaluate(el => getComputedStyle(el).animationName), 'none');
   assert.equal(await reduced.locator('.motion-enter').count(), 0);
   await reduced.locator('#program').scrollIntoViewIfNeeded();
@@ -130,6 +185,102 @@ try {
   assert.equal(await reduced.evaluate(() => document.getAnimations().length), 0);
   await reduced.close();
   console.log('Motion, rapid gallery input and live reduced-motion preference: passed');
+  const disclosures = await context.newPage();
+  await disclosures.setViewportSize({ width: 390, height: 844 });
+  await disclosures.goto(page.url(), { waitUntil: 'load' });
+  await disclosures.evaluate(() => document.fonts.ready);
+  await disclosures.evaluate(() => { document.documentElement.style.scrollBehavior = 'auto'; });
+  await checkDisclosure(disclosures, '#faq-answer-1', '#faq-question-1');
+  await checkDisclosure(disclosures, '.coach-details', '.coach-details summary');
+  await disclosures.locator('.coach-details summary').press('Enter');
+  assert.equal(await disclosures.locator('.coach-details').getAttribute('open'), '');
+  await disclosures.locator('.coach-details summary').press('Enter');
+  await disclosures.waitForTimeout(350);
+  await checkDisclosure(disclosures, '.menu-collapse', '.menu-button');
+  await disclosures.locator('.menu-button').focus();
+  await disclosures.keyboard.press('Tab');
+  assert(await disclosures.evaluate(() => !document.activeElement.closest('#mobile-nav')), 'Collapsed menu links must be skipped by Tab');
+  await disclosures.getByRole('button', { name: 'На бесплатную тренировку', exact: true }).click();
+  await disclosures.locator('dialog').evaluate(el => Promise.all(el.getAnimations().map(animation => animation.finished)));
+  await checkDisclosure(disclosures, '#message-preview', '.message-toggle');
+  await disclosures.emulateMedia({ reducedMotion: 'reduce' });
+  await disclosures.locator('.message-toggle').click();
+  assert.equal(await disclosures.evaluate(() => document.getAnimations().length), 0);
+  assert((await disclosures.locator('#message-preview').boundingBox()).height > 0);
+  await disclosures.locator('.message-toggle').click();
+  assert.equal((await disclosures.locator('#message-preview').boundingBox()).height, 0);
+  await disclosures.close();
+  console.log('Disclosure opening/closing heights, rapid input, keyboard and reduced motion: passed');
+  const fades = await context.newPage();
+  await fades.setViewportSize({ width: 390, height: 844 });
+  let releaseNext;
+  const nextImageGate = new Promise(resolve => { releaseNext = resolve; });
+  await fades.route('**/images/hall-2-upscaled.jpg', async route => { await nextImageGate; await route.continue(); });
+  await fades.goto(page.url(), { waitUntil: 'domcontentloaded' });
+  await fades.locator('.venue-main').scrollIntoViewIfNeeded();
+  await fades.waitForFunction(() => document.querySelector('.venue-main > img[data-active="true"]')?.dataset.state === 'ready');
+  await fades.waitForTimeout(700);
+  await fades.getByRole('button', { name: 'Следующая фотография', exact: true }).click();
+  await fades.getByRole('status').filter({ hasText: 'Загружаем фотографию' }).waitFor();
+  assert((await fades.locator('.venue-main > img[data-active="true"]').getAttribute('src')).includes('hall-1-upscaled'));
+  assert.equal(await fades.locator('.venue-main > img[data-active="true"]').evaluate(el => getComputedStyle(el).opacity), '1', 'Previous photo must remain opaque while the next loads');
+  releaseNext();
+  await fades.waitForFunction(() => [...document.querySelectorAll('.venue-main > img')].every(img => img.dataset.state === 'ready'));
+  await fades.waitForTimeout(350);
+  const fadeEvidence = await fades.locator('.venue-main').evaluate(async frame => {
+    const images = [...frame.querySelectorAll(':scope > img')];
+    const height = frame.getBoundingClientRect().height;
+    const samples = [];
+    const transitions = [];
+    for (let i = 0; i < 5; i++) {
+      const before = samples.length;
+      frame.querySelector(i % 2 === 0 ? 'button[aria-label="Предыдущая фотография"]' : 'button[aria-label="Следующая фотография"]').click();
+      const start = performance.now();
+      await new Promise(resolve => {
+        function sample() {
+          const styles = images.map(img => getComputedStyle(img));
+          samples.push({ covered: styles.some(style => style.visibility === 'visible' && Number(style.opacity) === 1), fixed: styles.every(style => style.transform === 'none'), stable: frame.getBoundingClientRect().height === height, blending: styles.some(style => Number(style.opacity) > 0 && Number(style.opacity) < 1) });
+          if (performance.now() - start < 350) requestAnimationFrame(sample); else resolve();
+        }
+        requestAnimationFrame(sample);
+      });
+      transitions.push(samples.slice(before).some(sample => sample.blending));
+    }
+    return { samples, transitions, retained: images.every((img, i) => img === frame.querySelectorAll(':scope > img')[i]) };
+  });
+  assert(fadeEvidence.retained, 'Switching must keep decoded image elements');
+  assert(fadeEvidence.samples.every(sample => sample.covered && sample.fixed && sample.stable), 'No blank frames, scaling or gallery height shifts');
+  assert(fadeEvidence.transitions.every(Boolean), 'Each forward/backward change must fade gradually');
+  await fades.close();
+  console.log('Gallery holds previous photo, retains decoded images and fades without blank/scaled frames: passed');
+  const gallery = await context.newPage();
+  await gallery.setViewportSize({ width: 320, height: 900 });
+  await gallery.emulateMedia({ reducedMotion: 'reduce' });
+  let releaseImage;
+  let blockImage = true;
+  const imageGate = new Promise(resolve => { releaseImage = resolve; });
+  await gallery.route('**/images/hall-1-upscaled.jpg', async route => {
+    if (blockImage) { await imageGate; await route.abort(); }
+    else await route.continue();
+  });
+  await gallery.goto(page.url(), { waitUntil: 'domcontentloaded' });
+  await gallery.locator('.venue-main').scrollIntoViewIfNeeded();
+  await gallery.getByRole('status').filter({ hasText: 'Загружаем фотографию' }).waitFor();
+  const frameBefore = await gallery.locator('.venue-main').boundingBox();
+  releaseImage();
+  await gallery.getByText('Не удалось загрузить фотографию.').waitFor();
+  const frameError = await gallery.locator('.venue-main').boundingBox();
+  assert.equal(frameError.height, frameBefore.height, 'An image error must not shift the gallery frame');
+  await checkTouchTargets(gallery);
+  await gallery.locator('#venues').screenshot({ path: `${out}/gallery-error.png` });
+  blockImage = false;
+  await gallery.getByRole('button', { name: 'Повторить загрузку' }).press('Enter');
+  await gallery.waitForFunction(() => document.querySelector('.venue-main > img[data-active="true"]')?.dataset.state === 'ready');
+  assert(await gallery.locator('.venue-main > img[data-active="true"]').evaluate(img => img.naturalWidth > 0));
+  assert.equal(await gallery.locator('.venue-photo-state').count(), 0);
+  assert(await gallery.getByRole('button', { name: 'Предыдущая фотография', exact: true }).evaluate(el => el === document.activeElement), 'Retry must preserve a useful keyboard focus');
+  await gallery.close();
+  console.log('44 px targets, delayed photo, image failure, retry and keyboard recovery: passed');
   assert.deepEqual(errors, []);
   console.log('9 responsive widths, mobile menu, anchors and browser errors: passed');
 } finally { await browser.close(); }
