@@ -58,7 +58,7 @@ FOOTBALL_BASE_URL=http://127.0.0.1:4173/ node scripts/smoke.mjs
 
 Можно задать `FOOTBALL_BROWSER` — путь к уже установленному Chrome, `PLAYWRIGHT_PATH` — путь к установленному пакету Playwright, `FOOTBALL_SCREENSHOTS` — каталог снимков.
 
-В `.github/workflows/pages.yml` сохранён workflow GitHub Pages. Публикация из этой рабочей сессии не выполнялась.
+Сайт публикуется на [GitHub Pages](https://egkodin.github.io/football/) через `.github/workflows/pages.yml` после push в `main`. Workflow выполняет `npm ci`, production-сборку и загрузку `dist/`; результат доступен во вкладке Actions репозитория. Для отката выполните `git revert <коммит>` и отправьте новый коммит в `main`.
 
 Иконки: Icons8 Material Outlined (`m_outlined`), локальные PNG 96 × 96 px. Бесплатное использование PNG до 100 px требует ссылки на Icons8; ссылка находится в подвале. Условия: https://icons8.com/license. Идентификаторы, названия и превью всех иконок сохранены в `icons8.json`. SVG недоступны в текущем подключении Icons8.
 
