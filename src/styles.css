@@ -456,7 +456,7 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .training-grid { grid-template-columns: 1fr; }
   .card-body h3 { font-size: 28px; }
   .venue-main { aspect-ratio: 1.3; }
-  .coach-methodist .coach-copy h2 { font-size: clamp(32px, 7.8vw, 46px); }
+  #coach-title, .coach-methodist .coach-copy h2 { font-size: clamp(32px, 7.8vw, 46px); }
   .venue-footer { grid-template-columns: minmax(0, 1fr) auto; gap: 20px 12px; }
   .venue-overlay h3 { font-size: 20px; }
   .venue-thumbnails { grid-column: 1 / -1; grid-row: 2; gap: 10px; }

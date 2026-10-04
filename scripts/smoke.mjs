@@ -122,8 +122,8 @@ try {
   console.log('School sections, palette, crest and images: passed');
   assert.equal(await page.locator('#coaches .coach-layout').count(), 2);
   assert.equal(await page.locator('#coaches-title').innerText(), 'Тренеры');
-  assert.equal(await page.locator('#coach-title').innerText(), 'Артем\nТрофимов');
-  assert.equal(await page.locator('.coach-license').innerText(), 'ЛИЦЕНЗИЯ C–UEFA');
+  assert.equal(await page.locator('#coach-title').innerText(), 'Артем Михайлович\nТрофимов');
+  assert.deepEqual(await page.locator('.coach-license').allInnerTexts(), ['ЛИЦЕНЗИЯ C–UEFA', 'ЛИЦЕНЗИЯ B–UEFA']);
   assert.equal(await page.locator('.coach-copy .eyebrow').first().innerText(), 'СТАРШИЙ ТРЕНЕР');
   assert.equal(await page.locator('#methodist-title').innerText(), 'Ираклий Шалвович\nГеленава');
   assert.equal(await page.locator('.coach-methodist img').count(), 1);
