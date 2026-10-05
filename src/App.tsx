@@ -206,11 +206,11 @@ export default function App() {
           <div className="partner-badge"><img className="partner-crest" src={assetPath('images/spartak-logo.webp')} width="56" height="56" alt="Эмблема ДФК «Спартак»" loading="lazy"/><span>Официальный партнёр<br/><strong>ДФК «Спартак»</strong></span></div>
         </div>
         <ul className="partnership-benefits">
-          <li><Icon name="check" size={20}/><strong>Ребёнок тренируется в системе, связанной с профессиональным футбольным клубом.</strong></li>
-          <li><Icon name="check" size={20}/><strong>У талантливых игроков появляется дополнительная возможность быть замеченными.</strong></li>
-          <li><Icon name="check" size={20}/><strong>Больше возможностей для игровой практики и соревнований.</strong></li>
-          <li><Icon name="check" size={20}/><span>В тренировочном процессе используется методика ДФК Спартак.</span></li>
-          <li><Icon name="check" size={20}/><span>Куратор ДФК Спартак отслеживает контроль качества тренировочного процесса и соответствия работы заявленным стандартам клуба.</span></li>
+          <li><Icon name="team" size={24}/><strong>Ребёнок тренируется в системе, связанной с профессиональным футбольным клубом.</strong></li>
+          <li><Icon name="star" size={24}/><strong>У талантливых игроков появляется дополнительная возможность быть замеченными.</strong></li>
+          <li><Icon name="trophy" size={24}/><strong>Больше возможностей для игровой практики и соревнований.</strong></li>
+          <li><Icon name="book" size={24}/><strong>В тренировочном процессе используется методика ДФК Спартак.</strong></li>
+          <li><Icon name="inspection" size={24}/><strong>Куратор ДФК Спартак отслеживает контроль качества тренировочного процесса и соответствия работы заявленным стандартам клуба.</strong></li>
         </ul>
       </section>
 

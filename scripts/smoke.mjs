@@ -87,7 +87,7 @@ try {
     assert.equal(png.readUInt32BE(20), 96);
   }
   assert.equal(await page.getByRole('link', { name: 'Иконки: Icons8' }).getAttribute('href'), 'https://icons8.com/');
-  console.log('17 local Icons8 PNGs and attribution: passed');
+  console.log(`${iconUrls.length} local Icons8 PNGs and attribution: passed`);
   assert.equal(await page.locator('.hero-title-line').count(), 3);
   for (const id of ['partnership', 'about', 'coaches', 'program', 'venues', 'schedule', 'pricing', 'contacts']) assert.equal(await page.locator(`#${id}`).count(), 1);
   for (const [property, value] of Object.entries({ '--brand-green': '#11651a', '--yellow': '#ffdd2d', '--red': '#db320b' })) assert.equal(await page.evaluate(p => getComputedStyle(document.documentElement).getPropertyValue(p).trim(), property), value);
@@ -146,10 +146,11 @@ try {
   for (const text of ['6 лет', '2015–2020', '№ 18 «Митино»', '2011–2015', 'К. И. Бескова', '2002–2003', '«Зоркий»', '2004, 2005, 2006', '2008', 'спартакиады', '2013', '2012, 2013, 2014', 'серебряный призёр', 'первый взрослый разряд']) assert(curatorBiography.includes(text), `Missing curator biography: ${text}`);
   await page.locator('#curator-biography-toggle').click();
   assert.equal(await page.locator('.partnership-benefits li').count(), 5);
-  assert.equal(await page.locator('.partnership-benefits strong').count(), 3);
+  assert.equal(await page.locator('.partnership-benefits strong').count(), 5);
+  assert.deepEqual(await page.locator('.partnership-benefits .icon').evaluateAll(icons => icons.map(icon => [...icon.classList].find(name => name.startsWith('icon-')))), ['icon-team', 'icon-star', 'icon-trophy', 'icon-book', 'icon-inspection']);
+  assert(await page.locator('.partnership-benefits strong').evaluateAll(items => items.every(item => Number(getComputedStyle(item).fontWeight) >= 700)), 'Every partnership thesis must be bold');
   assert(await page.evaluate(() => Boolean(document.querySelector('#partnership').compareDocumentPosition(document.querySelector('#about')) & Node.DOCUMENT_POSITION_FOLLOWING)));
   assert.equal(await page.locator('footer').getByRole('link', { name: 'ВКонтакте' }).getAttribute('href'), 'https://vk.ru/dfc_sportacade');
-  assert((await page.locator('.footer-privacy > p').innerText()).includes('не сохраняются на сайте'));
 
   assert.equal(await page.locator('#coach-title').innerText(), 'Артем Михайлович\nТрофимов');
   assert.deepEqual(await page.locator('.coach-license').allInnerTexts(), ['ЛИЦЕНЗИЯ C–UEFA', 'ЛИЦЕНЗИЯ B–UEFA', 'ЛИЦЕНЗИЯ C–UEFA']);

@@ -111,6 +111,30 @@
         "commonName": "filled-star",
         "preview": "https://img.icons8.com/?id=96206&format=png&size=48",
         "file": "public/icons/star.png"
+      },
+      "team": {
+        "id": "85057",
+        "commonName": "conference-call",
+        "preview": "https://img.icons8.com/?id=85057&format=png&size=48",
+        "file": "public/icons/team.png"
+      },
+      "trophy": {
+        "id": "85613",
+        "commonName": "trophy",
+        "preview": "https://img.icons8.com/?id=85613&format=png&size=48",
+        "file": "public/icons/trophy.png"
+      },
+      "book": {
+        "id": "85767",
+        "commonName": "book",
+        "preview": "https://img.icons8.com/?id=85767&format=png&size=48",
+        "file": "public/icons/book.png"
+      },
+      "inspection": {
+        "id": "88011",
+        "commonName": "inspection",
+        "preview": "https://img.icons8.com/?id=88011&format=png&size=48",
+        "file": "public/icons/inspection.png"
       }
     },
     "format": "png",

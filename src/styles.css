@@ -561,7 +561,7 @@ h2 { letter-spacing: -.03em; text-wrap: balance; }
 .partnership-benefits li:first-child { padding-top: 0; }
 .partnership-benefits li:last-child { border-bottom: 0; padding-bottom: 0; }
 .partnership-benefits .icon { flex-shrink: 0; margin-top: 4px; color: var(--brand-green); }
-.partnership-benefits strong { font-size: 16px; font-weight: 600; color: var(--ink); }
+.partnership-benefits strong { font-size: 16px; font-weight: 700; color: var(--ink); }
 .footer-privacy { border-top: 1px solid #ffffff21; padding-block: 22px; font-size: 12px; line-height: 1.8; color: #b6bfb3; }
 .footer-privacy > p { max-width: 920px; margin: 0; }
 @media (max-width: 900px) { .partnership { grid-template-columns: 1fr; gap: 32px; } }
