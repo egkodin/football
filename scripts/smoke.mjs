@@ -42,6 +42,49 @@ async function checkDisclosure(page, target, trigger) {
   assert(await page.locator(target).first().evaluate(el => el.matches('details') ? !el.open : el.inert && el.getBoundingClientRect().height === 0), `${target} must settle closed after rapid input`);
 }
 try {
+  const pixelContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
+  await pixelContext.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><body>Карта</body></html>' }));
+  let pixelRequests = 0;
+  await pixelContext.route('https://top-fwz1.mail.ru/**', route => {
+    pixelRequests++;
+    return route.fulfill({ contentType: 'application/javascript', body: 'window.__pixelEvents = [...window._tmr];' });
+  });
+  const consent = await pixelContext.newPage();
+  const baseUrl = process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/';
+  await consent.goto(baseUrl, { waitUntil: 'load' });
+  await consent.waitForTimeout(350);
+  assert.equal(pixelRequests, 0, 'Pixel must not contact VK before consent');
+  assert.equal(await consent.locator('#vk-pixel').count(), 0);
+  await checkTouchTargets(consent);
+  await consent.screenshot({ path: `${out}/pixel-consent-mobile.png` });
+  await consent.getByRole('button', { name: 'Не разрешать', exact: true }).press('Enter');
+  await consent.reload({ waitUntil: 'load' });
+  assert.equal(pixelRequests, 0, 'Refusal must persist across reloads');
+  assert.equal(await consent.locator('#privacy-options').getAttribute('inert'), '');
+  await consent.getByRole('button', { name: 'Настройки ВК-пикселя' }).click();
+  await consent.getByRole('button', { name: 'Разрешить', exact: true }).press('Enter');
+  await consent.waitForFunction(() => window.__pixelEvents?.length === 1);
+  assert.equal(pixelRequests, 1, 'Consent must load one script even in React StrictMode');
+  assert.deepEqual(await consent.evaluate(() => window.__pixelEvents.map(({id, type}) => ({id, type}))), [{ id: '3793562', type: 'pageView' }]);
+  assert(await consent.getByRole('button', { name: 'Настройки ВК-пикселя' }).evaluate(el => el === document.activeElement), 'Settings must regain keyboard focus');
+  await consent.reload({ waitUntil: 'load' });
+  await consent.waitForFunction(() => window.__pixelEvents?.length === 1);
+  assert.equal(pixelRequests, 2, 'Saved permission must initialize once per page load');
+  await consent.getByRole('button', { name: 'Настройки ВК-пикселя' }).click();
+  await Promise.all([consent.waitForNavigation({ waitUntil: 'load' }), consent.getByRole('button', { name: 'Не разрешать', exact: true }).click()]);
+  assert.equal(await consent.locator('#vk-pixel').count(), 0, 'Revocation must stop the loaded tracker by reloading without it');
+  assert.equal(pixelRequests, 2);
+  assert.equal(await consent.evaluate(() => localStorage.getItem('vk-pixel-consent')), 'denied');
+  const otherTab = await pixelContext.newPage();
+  await otherTab.goto(baseUrl, { waitUntil: 'load' });
+  await Promise.all([consent.waitForNavigation({ waitUntil: 'load' }), otherTab.evaluate(() => localStorage.setItem('vk-pixel-consent', 'allowed'))]);
+  await consent.waitForFunction(() => window.__pixelEvents?.length === 1);
+  const beforeRevocation = pixelRequests;
+  await Promise.all([consent.waitForNavigation({ waitUntil: 'load' }), otherTab.evaluate(() => localStorage.clear())]);
+  assert.equal(await consent.locator('#vk-pixel').count(), 0, 'Clearing consent in another tab must unload the tracker');
+  assert.equal(pixelRequests, beforeRevocation);
+  await pixelContext.close();
+  console.log('VK pixel 3793562: opt-in, refusal, persistence, single initialization, keyboard and revocation (provider stub): passed');
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
   await context.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><title>Карта: проверка встраивания</title><body>Яндекс Карты</body></html>' }));
   const page = await context.newPage();
@@ -55,6 +98,8 @@ try {
   const response = await page.goto(process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });
   assert.equal(response.status(), 200);
   await page.locator('.hero').waitFor();
+  await page.getByRole('button', { name: 'Не разрешать', exact: true }).click();
+  await page.waitForTimeout(350);
   assert(await page.locator('.hero, .hero *').evaluateAll(elements => elements.every(el => {
     const style = getComputedStyle(el);
     return style.animationName === 'none' && style.transform === 'none' && style.clipPath === 'none' && style.opacity === '1';
@@ -78,12 +123,12 @@ try {
   assert.equal(await page.getByRole('link', { name: 'Иконки: Icons8' }).getAttribute('href'), 'https://icons8.com/');
   console.log('17 local Icons8 PNGs and attribution: passed');
   assert.equal(await page.locator('.hero-title-line').count(), 3);
-  for (const id of ['about', 'coaches', 'program', 'venues', 'schedule', 'pricing', 'contacts']) assert.equal(await page.locator(`#${id}`).count(), 1);
+  for (const id of ['partnership', 'about', 'coaches', 'program', 'venues', 'schedule', 'pricing', 'contacts']) assert.equal(await page.locator(`#${id}`).count(), 1);
   for (const [property, value] of Object.entries({ '--brand-green': '#11651a', '--yellow': '#ffdd2d', '--red': '#db320b' })) assert.equal(await page.evaluate(p => getComputedStyle(document.documentElement).getPropertyValue(p).trim(), property), value);
   for (let y = 0; y < await page.evaluate(() => document.body.scrollHeight); y += 700) { await page.evaluate(y => scrollTo(0, y), y); await page.waitForTimeout(50); }
   await page.waitForFunction(() => [...document.querySelectorAll('img')].every(img => img.complete && img.naturalWidth > 0));
   assert(await page.locator('img').evaluateAll(images => images.every(img => img.complete && img.naturalWidth > 0)));
-  const upscaledPhotos = page.locator('.coach-photo-wrap > img');
+  const upscaledPhotos = page.locator('.coach-photo-wrap > img[src$="-upscaled.jpg"]');
   assert.equal(await upscaledPhotos.count(), 2);
   assert(await upscaledPhotos.evaluateAll(images => images.every(img => img.currentSrc.includes('-upscaled.jpg') && (img.currentSrc.includes('methodist-portrait') ? img.naturalWidth > 358 : img.naturalWidth > img.naturalHeight ? img.naturalWidth > 1280 : img.naturalHeight > 1280))), 'Both coaches must use higher-resolution replacements');
   assert.equal(await page.locator('.venue-thumbnails img').count(), 4);
@@ -112,7 +157,7 @@ try {
   await page.waitForTimeout(400);
   await page.screenshot({ path: `${out}/desktop.png`, fullPage: true });
   await page.screenshot({ path: `${out}/desktop-hero.png` });
-  for (const id of ['coaches', 'program', 'schedule', 'pricing', 'contacts']) await page.locator(`#${id}`).screenshot({ path: `${out}/${id}.png` });
+  for (const id of ['partnership', 'coaches', 'program', 'schedule', 'pricing', 'contacts']) await page.locator(`#${id}`).screenshot({ path: `${out}/${id}.png` });
   await page.locator('.coach-methodist').scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
   await page.locator('.coach-methodist').screenshot({ path: `${out}/methodist-desktop.png` });
@@ -120,10 +165,20 @@ try {
   await page.waitForTimeout(500);
   await page.locator('#venues').screenshot({ path: `${out}/venues-desktop.png` });
   console.log('School sections, palette, crest and images: passed');
-  assert.equal(await page.locator('#coaches .coach-layout').count(), 2);
+  assert.equal(await page.locator('#coaches .coach-layout').count(), 3);
   assert.equal(await page.locator('#coaches-title').innerText(), 'Тренеры');
+  assert.equal(await page.locator('#curator-title').innerText(), 'Валерий Валерьевич\nЦимбал');
+  assert.equal(await page.locator('.coach-curator img').count(), 1);
+  assert((await page.locator('.coach-curator img').getAttribute('src')).endsWith('coach-curator.webp'));
+  assert.equal(await page.getByRole('link', { name: 'Профиль в ДФК «Спартак»' }).getAttribute('href'), 'https://spartakpd.ru/cimbal');
+  assert.equal(await page.locator('.partnership-benefits li').count(), 5);
+  assert.equal(await page.locator('.partnership-benefits strong').count(), 3);
+  assert(await page.evaluate(() => Boolean(document.querySelector('#partnership').compareDocumentPosition(document.querySelector('#about')) & Node.DOCUMENT_POSITION_FOLLOWING)));
+  assert.equal(await page.locator('footer').getByRole('link', { name: 'ВКонтакте' }).getAttribute('href'), 'https://vk.ru/dfc_sportacade');
+  assert((await page.locator('.footer-privacy > p').innerText()).includes('не сохраняются на сайте'));
+
   assert.equal(await page.locator('#coach-title').innerText(), 'Артем Михайлович\nТрофимов');
-  assert.deepEqual(await page.locator('.coach-license').allInnerTexts(), ['ЛИЦЕНЗИЯ C–UEFA', 'ЛИЦЕНЗИЯ B–UEFA']);
+  assert.deepEqual(await page.locator('.coach-license').allInnerTexts(), ['ЛИЦЕНЗИЯ C–UEFA', 'ЛИЦЕНЗИЯ B–UEFA', 'ЛИЦЕНЗИЯ C–UEFA']);
   assert.equal(await page.locator('.coach-copy .eyebrow').first().innerText(), 'СТАРШИЙ ТРЕНЕР');
   assert.equal(await page.locator('#methodist-title').innerText(), 'Ираклий Шалвович\nГеленава');
   assert.equal(await page.locator('.coach-methodist img').count(), 1);
@@ -212,6 +267,7 @@ try {
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Overflow at ${width}`);
     assert(await page.locator('h1').evaluate(el => el.scrollWidth <= el.clientWidth), `Heading overflow at ${width}`);
     assert(await page.locator('#methodist-title').evaluate(el => el.scrollWidth <= el.clientWidth), `Coach name overflow at ${width}`);
+    assert(await page.locator('#partnership-title, #curator-title').evaluateAll(elements => elements.every(el => el.scrollWidth <= el.clientWidth)), `New heading overflow at ${width}`);
     const galleryLayout = await page.locator('.venue-gallery').evaluate(el => {
       const frame = el.querySelector('.venue-main').getBoundingClientRect();
       const caption = el.querySelector('.venue-overlay').getBoundingClientRect();
@@ -235,9 +291,11 @@ try {
   await page.waitForFunction(() => scrollY === 0);
   await page.screenshot({ path: `${out}/mobile-hero.png` });
   await page.screenshot({ path: `${out}/mobile.png`, fullPage: true });
-  await page.locator('.coach-methodist').scrollIntoViewIfNeeded();
-  await page.waitForTimeout(500);
-  await page.locator('.coach-methodist').screenshot({ path: `${out}/methodist-mobile.png` });
+  for (const [selector, name] of [['#partnership', 'partnership-mobile'], ['.coach-curator', 'curator-mobile'], ['.coach-methodist', 'methodist-mobile']]) {
+    await page.locator(selector).scrollIntoViewIfNeeded();
+    await page.waitForTimeout(700);
+    await page.locator(selector).screenshot({ path: `${out}/${name}.png` });
+  }
   await page.locator('#venues').scrollIntoViewIfNeeded();
   await page.waitForTimeout(500);
   await page.locator('#venues').screenshot({ path: `${out}/venues-mobile.png` });

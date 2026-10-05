@@ -270,10 +270,10 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .partner-crest { display: block; width: 56px; height: 56px; object-fit: contain; flex-shrink: 0; }
 .coach-section { background: #e9eee3; }
 .coaches-title { font-size: 13px; line-height: 1.5; letter-spacing: 0; font-weight: 600; }
-.coach-methodist { margin-top: 64px; padding-top: 64px; border-top: 1px solid #cbd4c6; }
-.coach-layout.coach-methodist { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 80px); }
-.coach-photo-wrap.coach-methodist-portrait { max-width: none; aspect-ratio: 1; }
-.coach-methodist .coach-copy h2 { font-size: clamp(36px, 3.8vw, 54px); line-height: 1.12; overflow-wrap: normal; }
+.coach-secondary { margin-top: 64px; padding-top: 64px; border-top: 1px solid #cbd4c6; }
+.coach-layout.coach-secondary { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); gap: clamp(32px, 6vw, 80px); }
+.coach-photo-wrap.coach-square-portrait { max-width: none; aspect-ratio: 1; }
+.coach-secondary .coach-copy h2 { font-size: clamp(36px, 3.8vw, 54px); line-height: 1.12; overflow-wrap: normal; }
 
 .coach-layout { display: grid; grid-template-columns: .85fr 1fr; gap: 96px; align-items: start; }
 .coach-photo-wrap { position: relative; max-width: 435px; background: #d4ddd0; overflow: hidden; aspect-ratio: .85; }
@@ -410,9 +410,9 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .coach-copy .eyebrow { font-size: 8px; }
   .coach-photo-wrap { aspect-ratio: .66; }
   .coach-license { left: 14px; }
-  .coach-layout.coach-methodist { grid-template-columns: 1fr; gap: 28px; }
-  .coach-photo-wrap.coach-methodist-portrait { max-width: 420px; }
-  .coach-methodist .coach-copy h2 { font-size: 46px; }
+  .coach-layout.coach-secondary { grid-template-columns: 1fr; gap: 28px; }
+  .coach-photo-wrap.coach-square-portrait { max-width: 420px; }
+  .coach-secondary .coach-copy h2 { font-size: 46px; }
   .venue-footer { gap: 20px; }
   .venue-thumbnails button { width: 104px; }
   .venue-main { aspect-ratio: 1.9; }
@@ -446,8 +446,8 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .coach-layout { grid-template-columns: 1fr; gap: 30px; }
   .coach-photo-wrap { max-width: none; aspect-ratio: 1.08; }
   .coach-photo-wrap img { object-position: center 24%; }
-  .coach-photo-wrap.coach-methodist-portrait { max-width: none; }
-  .coach-methodist { margin-top: 44px; padding-top: 44px; }
+  .coach-photo-wrap.coach-square-portrait { max-width: none; }
+  .coach-secondary { margin-top: 44px; padding-top: 44px; }
   .coach-license { left: 20px; bottom: 20px; }
   .coach-copy h2 { overflow-wrap: anywhere; letter-spacing: -.03em; margin: 21px 0; }
   .coach-copy .eyebrow { font-size: 9px; }
@@ -456,7 +456,7 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
   .training-grid { grid-template-columns: 1fr; }
   .card-body h3 { font-size: 28px; }
   .venue-main { aspect-ratio: 1.3; }
-  #coach-title, .coach-methodist .coach-copy h2 { font-size: clamp(32px, 7.8vw, 46px); }
+  #coach-title, .coach-secondary .coach-copy h2 { font-size: clamp(32px, 7.8vw, 46px); }
   .venue-footer { grid-template-columns: minmax(0, 1fr) auto; gap: 20px 12px; }
   .venue-overlay h3 { font-size: 20px; }
   .venue-thumbnails { grid-column: 1 / -1; grid-row: 2; gap: 10px; }
@@ -553,6 +553,34 @@ h2 { letter-spacing: -.03em; text-wrap: balance; }
 .values p { font-size: 14px; }
 .coach-photo-wrap, .venue-main, .training-card, .schedule-panel, .price-card, .address-card, .join-section { border-radius: 12px; }
 .coach-copy h2 { font-size: clamp(46px, 5vw, 67px); }
+.partnership { display: grid; grid-template-columns: 1fr 1.15fr; align-items: start; gap: 64px; border-bottom: 1px solid var(--line); }
+.partnership h2 { font-size: clamp(28px, 3.5vw, 48px); }
+.partnership-benefits { list-style: none; margin: 0; padding: 0; }
+.partnership-benefits li { display: flex; align-items: start; gap: 16px; padding-block: 20px; border-bottom: 1px solid var(--line); font-size: 14px; line-height: 1.8; color: var(--muted); }
+.partnership-benefits li:first-child { padding-top: 0; }
+.partnership-benefits li:last-child { border-bottom: 0; padding-bottom: 0; }
+.partnership-benefits .icon { flex-shrink: 0; margin-top: 4px; color: var(--brand-green); }
+.partnership-benefits strong { font-size: 16px; font-weight: 600; color: var(--ink); }
+.footer-privacy { border-top: 1px solid #ffffff21; padding-block: 22px; font-size: 12px; line-height: 1.8; color: #b6bfb3; }
+.footer-privacy > p { max-width: 920px; margin: 0; }
+.footer-privacy > button { font-size: 12px; color: var(--yellow); }
+.footer-privacy > .collapse { position: fixed; z-index: 30; bottom: 20px; right: 20px; width: min(460px, calc(100% - 40px)); border-radius: 12px; box-shadow: 0 8px 32px #172c1c26; background: var(--paper); color: var(--ink); }
+.privacy-options { max-height: calc(100dvh - 120px); overflow-y: auto; padding: 24px; }
+.privacy-options h3 { font-size: 20px; line-height: 1.3; margin: 0; }
+.privacy-options p { font-size: 12px; margin: 12px 0 0; }
+.privacy-options > a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: underline; font-size: 11px; }
+.privacy-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
+.privacy-actions .button { padding-inline: 12px; font-size: 12px; min-height: 44px; }
+.footer .privacy-options a:hover { color: var(--brand-green); }
+@media (max-width: 900px) { .partnership { grid-template-columns: 1fr; gap: 32px; } }
+@media (max-width: 640px) {
+  .partnership h2 { font-size: 30px; }
+  .partnership-benefits strong { font-size: 14px; }
+  .partnership-benefits li { gap: 12px; font-size: 13px; }
+  .privacy-options { padding: 20px; }
+  .privacy-actions { gap: 8px; }
+  .privacy-actions .button { font-size: 11px; }
+}
 .coach-intro { font-size: 16px; }
 .coach-facts > div > span { font-size: 12px; }
 .coach-facts p, .coach-details, .coach-details h3 { font-size: 14px; }
