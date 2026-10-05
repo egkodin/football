@@ -224,7 +224,7 @@ export default function App() {
             <p className="coach-intro">Контроль качества тренировочного процесса и соответствия работы стандартам клуба.</p>
             <div className="coach-facts">
               <div><span>Подготовка тренера</span><p>Центр подготовки детско-юношеских тренеров по футболу имени К. И. Бескова.</p></div>
-              <div><span>Стаж работы тренером</span><p>6 лет — по биографии ДФК «Спартак».</p></div>
+              <div><span>Стаж работы тренером</span><p>6 лет</p></div>
             </div>
             <CoachDetails id="curator-biography" label="Образование и достижения">
               <h3>Образование</h3>
