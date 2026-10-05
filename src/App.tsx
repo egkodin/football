@@ -202,8 +202,13 @@ export default function App() {
 
       <section className="partnership section container" id="partnership" aria-labelledby="partnership-title">
         <div className="partnership-heading">
+          <div className="partnership-identity">
+            <figure><img className="partner-crest" src={assetPath('images/club-logo.jpg')} width="104" height="104" alt="Эмблема СпортАкадемКлуба" loading="lazy"/><figcaption>СпортАкадемКлуб</figcaption></figure>
+            <span className="partnership-connection" aria-hidden="true"/>
+            <figure><img className="partner-crest" src={assetPath('images/spartak-logo.webp')} width="104" height="104" alt="Эмблема ДФК «Спартак»" loading="lazy"/><figcaption>ДФК «Спартак»</figcaption></figure>
+          </div>
           <h2 id="partnership-title">Сотрудничество<br/>с ДФК «Спартак»</h2>
-          <div className="partner-badge"><img className="partner-crest" src={assetPath('images/spartak-logo.webp')} width="56" height="56" alt="Эмблема ДФК «Спартак»" loading="lazy"/><span>Официальный партнёр<br/><strong>ДФК «Спартак»</strong></span></div>
+          <p className="partner-badge">Официальный партнёр</p>
         </div>
         <ul className="partnership-benefits">
           <li><Icon name="team" size={24}/><strong>Ребёнок тренируется в системе, связанной с профессиональным футбольным клубом.</strong></li>
