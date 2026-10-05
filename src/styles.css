@@ -292,6 +292,7 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .coach-details-content { color: var(--muted); line-height: 1.8; padding-bottom: 16px; }
 .coach-details h3 { color: var(--ink); margin: 15px 0 5px; }
 .coach-details ul { padding-left: 16px; }
+.coach-curator .coach-details li + li { margin-top: 12px; }
 .training { background: var(--paper); }
 .card-positive { background: #e9eee3; color: var(--ink); }
 .card-top { padding-inline: 21px; }
@@ -563,23 +564,11 @@ h2 { letter-spacing: -.03em; text-wrap: balance; }
 .partnership-benefits strong { font-size: 16px; font-weight: 600; color: var(--ink); }
 .footer-privacy { border-top: 1px solid #ffffff21; padding-block: 22px; font-size: 12px; line-height: 1.8; color: #b6bfb3; }
 .footer-privacy > p { max-width: 920px; margin: 0; }
-.footer-privacy > button { font-size: 12px; color: var(--yellow); }
-.footer-privacy > .collapse { position: fixed; z-index: 30; bottom: 20px; right: 20px; width: min(460px, calc(100% - 40px)); border-radius: 12px; box-shadow: 0 8px 32px #172c1c26; background: var(--paper); color: var(--ink); }
-.privacy-options { max-height: calc(100dvh - 120px); overflow-y: auto; padding: 24px; }
-.privacy-options h3 { font-size: 20px; line-height: 1.3; margin: 0; }
-.privacy-options p { font-size: 12px; margin: 12px 0 0; }
-.privacy-options > a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; text-decoration: underline; font-size: 11px; }
-.privacy-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-.privacy-actions .button { padding-inline: 12px; font-size: 12px; min-height: 44px; }
-.footer .privacy-options a:hover { color: var(--brand-green); }
 @media (max-width: 900px) { .partnership { grid-template-columns: 1fr; gap: 32px; } }
 @media (max-width: 640px) {
   .partnership h2 { font-size: 30px; }
   .partnership-benefits strong { font-size: 14px; }
   .partnership-benefits li { gap: 12px; font-size: 13px; }
-  .privacy-options { padding: 20px; }
-  .privacy-actions { gap: 8px; }
-  .privacy-actions .button { font-size: 11px; }
 }
 .coach-intro { font-size: 16px; }
 .coach-facts > div > span { font-size: 12px; }

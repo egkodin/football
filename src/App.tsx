@@ -18,11 +18,11 @@ function Collapse({ open, children, className = '', ...props }: HTMLAttributes<H
   </div>;
 }
 
-function CoachDetails({ id, children }: { id: string; children: ReactNode }) {
+function CoachDetails({ id, children, label = 'Карьера и тренерский опыт' }: { id: string; children: ReactNode; label?: string }) {
   const [open, setOpen] = useState(false);
   return <div className="coach-details" data-open={open}>
     <button type="button" className="coach-details-toggle" id={`${id}-toggle`} aria-expanded={open} aria-controls={id} onClick={() => setOpen(previous => !previous)}>
-      Карьера и тренерский опыт <Icon name="plus" size={16}/>
+      {label} <Icon name="plus" size={16}/>
     </button>
     <Collapse open={open} id={id} role="region" aria-labelledby={`${id}-toggle`}><div className="coach-details-content">{children}</div></Collapse>
   </div>;
@@ -35,61 +35,6 @@ function Brand({ light = false }: { light?: boolean }) {
   </a>;
 }
 
-function PrivacyNotice() {
-  const [choice, setChoice] = useState<string | null>(() => {
-    try { return localStorage.getItem('vk-pixel-consent'); } catch { return null; }
-  });
-  const [open, setOpen] = useState(choice !== 'allowed' && choice !== 'denied');
-  const [error, setError] = useState('');
-  const returnFocusRef = useRef<HTMLElement | null>(null);
-
-  useEffect(() => {
-    if (choice !== 'allowed' || document.getElementById('vk-pixel')) return;
-    const tracker = window as typeof window & { _tmr?: { id: string; type: string; start: number }[] };
-    tracker._tmr ??= [];
-    tracker._tmr.push({ id: '3793562', type: 'pageView', start: Date.now() });
-    const script = document.createElement('script');
-    script.id = 'vk-pixel';
-    script.async = true;
-    script.src = 'https://top-fwz1.mail.ru/js/code.js';
-    document.head.append(script);
-  }, [choice]);
-
-  useEffect(() => {
-    function syncConsent(event: StorageEvent) {
-      if (event.key === 'vk-pixel-consent' || event.key === null) window.location.reload();
-    }
-    window.addEventListener('storage', syncConsent);
-    return () => window.removeEventListener('storage', syncConsent);
-  }, []);
-
-  function choose(value: 'allowed' | 'denied') {
-    try { localStorage.setItem('vk-pixel-consent', value); }
-    catch {
-      if (document.getElementById('vk-pixel') && value === 'denied') {
-        setError('Браузер не позволил сохранить отказ. Разрешите доступ к настройкам сайта и повторите.');
-        return;
-      }
-    }
-    if (value === 'denied' && document.getElementById('vk-pixel')) { window.location.reload(); return; }
-    setChoice(value); setOpen(false); setError('');
-    requestAnimationFrame(() => returnFocusRef.current?.focus({ preventScroll: true }));
-  }
-
-  return <div className="footer-privacy">
-    <p>Данные, введённые для записи, не сохраняются на сайте. Сообщение менеджеру вы отправляете самостоятельно в мессенджере. С вашего согласия ВК-пиксель передаёт ВК сведения о посещениях и действиях на сайте для аналитики и рекламы.</p>
-    <button type="button" className="text-link" aria-expanded={open} aria-controls="privacy-options" onClick={event => { returnFocusRef.current = event.currentTarget; setOpen(previous => !previous); }}>Настройки ВК-пикселя</button>
-    <Collapse open={open} id="privacy-options" role="region" aria-labelledby="privacy-title">
-      <div className="privacy-options">
-        <h3 id="privacy-title">Разрешить ВК-пиксель?</h3>
-        <p>Он использует cookies и передаёт ВК сведения о посещениях и действиях на сайте для аналитики и рекламы. Вы можете отказаться или изменить решение здесь в любой момент.</p>
-        <a href="https://help.mail.ru/legal/terms/adsvk/privacy/" target="_blank" rel="noopener noreferrer">Политика конфиденциальности ВК <Icon name="up-right" size={16}/></a>
-        <div className="privacy-actions"><button type="button" className="button button-light" onClick={() => choose('denied')}>Не разрешать</button><button type="button" className="button button-primary" onClick={() => choose('allowed')}>Разрешить</button></div>
-        {error && <p role="alert">{error}</p>}
-      </div>
-    </Collapse>
-  </div>;
-}
 function PitchArt({ type }: { type: string }) {
   return <svg viewBox="0 0 400 220" fill="none" className="pitch-art" aria-hidden="true">
     <rect x="55" y="28" width="290" height="164" rx="1" stroke="currentColor" strokeOpacity=".2"/>
@@ -203,6 +148,18 @@ export default function App() {
   const lastFocusRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
+    if (document.getElementById('vk-pixel')) return;
+    const tracker = window as typeof window & { _tmr?: { id: string; type: string; start: number }[] };
+    tracker._tmr ??= [];
+    tracker._tmr.push({ id: '3793562', type: 'pageView', start: Date.now() });
+    const script = document.createElement('script');
+    script.id = 'vk-pixel';
+    script.async = true;
+    script.src = 'https://top-fwz1.mail.ru/js/code.js';
+    document.head.append(script);
+  }, []);
+
+  useEffect(() => {
     if (!('IntersectionObserver' in window)) return;
     const preference = window.matchMedia('(prefers-reduced-motion: reduce)');
     const targets = document.querySelectorAll('main .section h2, .coach-photo-wrap, .training-grid, .venue-gallery, .pricing-grid, .join-art, .address-card');
@@ -260,8 +217,35 @@ export default function App() {
       <section className="about section container" id="about" aria-labelledby="about-title"><div className="section-label">О клубе</div><div className="about-content"><div><h2 id="about-title">Больше,<br/>чем <span className="outlined-word">просто игра.</span></h2></div><div className="about-text"><p>В СпортАкадемКлубе дети учатся играть в футбол, развиваются и становятся частью настоящей команды.</p><p className="muted">Тренируем детей от 3 до 11 лет в Москве. Занятия проходят в игровой форме с учётом возраста и уровня подготовки. Развиваем координацию, скорость, выносливость и уверенность в себе.</p><p className="muted">Наша задача – не просто научить ребёнка играть в футбол, а привить любовь к спорту, помочь ему стать увереннее и получать удовольствие от каждой тренировки.</p></div></div><div className="values"><article><span className="value-icon"><Icon name="football" size={32}/></span><h3>Профессиональный подход</h3><p>Квалифицированный тренер,<br/>актуальная методика и игровые упражнения.</p></article><article><span className="value-icon"><Icon name="care" size={32}/></span><h3>Внимание к каждому</h3><p>Маленькие группы.<br/>Развитие в своём темпе и соревновательный опыт.</p></article><article><span className="value-icon"><Icon name="building" size={32}/></span><h3>Комфортные условия</h3><p>Современная инфраструктура<br/>и удобное расписание рядом с метро.</p></article></div></section>
 
       <section className="coach-section section" id="coaches" aria-labelledby="coaches-title"><div className="container"><h2 className="section-label coaches-title" id="coaches-title">Тренеры</h2><div className="coach-layout"><div className="coach-photo-wrap"><img src={assetPath('images/coach-artem-upscaled.jpg')} alt="Артем Михайлович Трофимов, старший тренер СпортАкадемКлуба" width="1046" height="1503" loading="lazy"/><span className="coach-license">ЛИЦЕНЗИЯ C–UEFA</span></div><div className="coach-copy"><span className="eyebrow">Старший тренер</span><h2 id="coach-title">Артем Михайлович<br/><span>Трофимов</span></h2><p className="coach-intro">Профессиональный футбольный опыт.<br/>Внимательный подход к юным игрокам.</p><div className="coach-facts"><div><span>Образование</span><p>Российский государственный университет физической культуры и спорта. Кафедра теории и методики футбола.</p></div><div><span>Достижения</span><p>Победитель Летнего Первенства Москвы 2025. Победитель и призёр всероссийских турниров.</p></div></div><CoachDetails id="artem-career"><h3>Игровая карьера</h3><p>Воспитанник ФК «Химки», победитель зимнего первенства Москвы.</p><ul><li>ФК «Зоркий» (Красногорск)</li><li>ФК «Знамя» (Ногинск)</li></ul><h3>Тренерский опыт</h3><ul><li>Академия FFC</li><li>2024: стажировка в Академии «Спартак» им. Фёдора Черенкова</li><li>Академия «Витязь» Москва</li><li>ДФК «СпортАкадемКлуб»</li></ul><p>Победитель и призёр турниров по 2010 и 2011 г. р. Многократный чемпион и призёр ЛБЛ, МЧЛ, Кубка Офицеров и Winnergy Cup.</p></CoachDetails><button className="text-link" onClick={() => openEnrollment()}>Познакомиться на тренировке</button></div></div><article className="coach-layout coach-methodist coach-secondary" aria-labelledby="methodist-title"><div className="coach-photo-wrap coach-methodist-portrait coach-square-portrait"><img src={assetPath('images/coach-methodist-portrait-upscaled.jpg')} alt="Портрет Ираклия Шалвовича Геленавы, тренера-методиста СпортАкадемКлуба" width="1254" height="1254" loading="lazy"/><span className="coach-license">ЛИЦЕНЗИЯ B–UEFA</span></div><div className="coach-copy"><span className="eyebrow">Тренер-методист</span><h2 id="methodist-title">Ираклий Шалвович<br/><span>Геленава</span></h2><div className="coach-facts"><div><span>Образование</span><p>Высшее образование, МФПА.</p></div><div><span>Достижения</span><p>Чемпион мира среди юношеских команд по футболу 1987 г.<br/>Мастер спорта по футболу СССР.</p></div></div><CoachDetails id="methodist-career"><h3>Игровая карьера</h3><ul><li>Динамо Сухуми</li><li>ФК Цхуми</li></ul><h3>Тренерский опыт</h3><ul><li>Barca Academy Moscow</li><li>Академия FFC</li><li>Академия Витязь</li><li>ДЮФА ЦСКА</li><li>Школа Динамо</li></ul></CoachDetails><button className="text-link" onClick={() => openEnrollment()}>Познакомиться на тренировке</button></div></article><article className="coach-layout coach-curator coach-secondary" aria-labelledby="curator-title">
-          <div className="coach-photo-wrap coach-curator-portrait coach-square-portrait"><img src={assetPath('images/coach-curator.webp')} alt="Валерий Валерьевич Цимбал, куратор ДФК Спартак" width="365" height="393" loading="lazy" decoding="async"/><span className="coach-license">ЛИЦЕНЗИЯ C–UEFA</span></div>
-          <div className="coach-copy"><span className="eyebrow">Куратор ДФК «Спартак»</span><h2 id="curator-title">Валерий Валерьевич<br/><span>Цимбал</span></h2><p className="coach-intro">Контроль качества тренировочного процесса и соответствия работы стандартам клуба.</p><div className="coach-facts"><div><span>Образование</span><p>Московский институт физической культуры и спорта.<br/>Специальность: физическая культура.</p></div><div><span>Подготовка тренера</span><p>Центр подготовки детско-юношеских тренеров по футболу имени К. И. Бескова.</p></div></div><a className="text-link" href="https://spartakpd.ru/cimbal" target="_blank" rel="noopener noreferrer">Профиль в ДФК «Спартак» <Icon name="up-right" size={16}/></a></div>
+          <div className="coach-photo-wrap coach-curator-portrait coach-square-portrait"><img src={assetPath('images/coach-curator-upscaled.webp')} alt="Валерий Валерьевич Цимбал, куратор ДФК Спартак" width="1208" height="1302" loading="lazy" decoding="async"/><span className="coach-license">ЛИЦЕНЗИЯ C–UEFA</span></div>
+          <div className="coach-copy">
+            <span className="eyebrow">Куратор ДФК «Спартак»</span>
+            <h2 id="curator-title">Валерий Валерьевич<br/><span>Цимбал</span></h2>
+            <p className="coach-intro">Контроль качества тренировочного процесса и соответствия работы стандартам клуба.</p>
+            <div className="coach-facts">
+              <div><span>Подготовка тренера</span><p>Центр подготовки детско-юношеских тренеров по футболу имени К. И. Бескова.</p></div>
+              <div><span>Стаж работы тренером</span><p>6 лет — по биографии ДФК «Спартак».</p></div>
+            </div>
+            <CoachDetails id="curator-biography" label="Образование и достижения">
+              <h3>Образование</h3>
+              <ul>
+                <li><strong>Московский институт физической культуры и спорта</strong><br/>Факультет физической культуры, 2015–2020.</li>
+                <li><strong>ГБОУ СПО Педагогический колледж № 18 «Митино»</strong><br/>Специальность: физическая культура, 2011–2015.</li>
+                <li><strong>Центр подготовки детско-юношеских тренеров по футболу имени К. И. Бескова</strong><br/>Тренерская лицензия C–UEFA.</li>
+              </ul>
+              <h3>Личные достижения</h3>
+              <ul>
+                <li><strong>2002–2003:</strong> лучший игрок школы ДЮСШ «Зоркий».</li>
+                <li><strong>2004, 2005, 2006:</strong> чемпион Московской области по футболу.</li>
+                <li><strong>2008:</strong> чемпион Москвы по футболу.</li>
+                <li><strong>2011:</strong> победитель спартакиады Московской области по футболу.</li>
+                <li><strong>2013:</strong> чемпион Москвы среди ГБОУ СПО по мини-футболу.</li>
+                <li><strong>2012, 2013, 2014:</strong> чемпион Кубка К. И. Бескова среди ГБОУ СПО по мини-футболу.</li>
+                <li><strong>2015:</strong> серебряный призёр чемпионата России среди ГБОУ СПО по мини-футболу.</li>
+                <li><strong>2011:</strong> первый взрослый разряд по футболу.</li>
+              </ul>
+            </CoachDetails>
+          </div>
         </article></div></section>
 
       <section className="training section" id="program" aria-labelledby="training-title"><div className="container"><div className="section-label">Программа</div><div className="section-heading"><h2 id="training-title">От первого паса<br/>к настоящей игре.</h2><p className="muted">Четыре основы развития юного футболиста.<br/>В основе всего любовь к игре.</p></div><div className="training-grid">{methodology.map(item => <article className={`training-card card-${item.type}`} key={item.type}><div className="card-top"><span>{item.label}</span></div><PitchArt type={item.type === 'positive' ? 'first' : item.type}/><div className="card-body"><h3>{item.title}</h3><p>{item.description}</p></div></article>)}</div></div></section>
@@ -279,7 +263,7 @@ export default function App() {
       <section className="contacts-section section" id="contacts" aria-labelledby="contacts-title"><div className="container"><div className="section-label">Контакты</div><div className="contacts-layout"><div><h2 id="contacts-title">Увидимся<br/><span>на поле.</span></h2><a className="contact-phone" href={school.phoneHref}>{school.phone}<Icon name="phone" size={24}/></a><div className="contact-socials"><a className="button button-dark" href={school.telegram} target="_blank" rel="noopener noreferrer">Telegram <Icon name="send" size={16}/></a><a className="button button-outline" href={school.max} target="_blank" rel="noopener noreferrer">Max <Icon name="up-right" size={20}/></a></div><div className="contact-hours"><span>Время работы</span><p>Пн–пт: 09:00–21:00<br/>Сб: 09:00–20:00 · Вс: выходной</p></div></div><div className="address-card"><iframe className="address-map" src={school.mapWidget} title="Яндекс Карты: Москва, Сиреневый бульвар, 4" loading="lazy" referrerPolicy="strict-origin-when-cross-origin"/><div className="address-info"><span className="eyebrow">м. Черкизовская · м. Локомотив</span><h3>Сиреневый бульвар, 4</h3><p>Москва</p><a className="text-link" href={school.map} target="_blank" rel="noopener noreferrer">Открыть в Яндекс Картах <Icon name="up-right" size={16}/></a></div></div></div></div></section>
     </main>
 
-    <footer className="footer"><div className="container"><div className="footer-top"><Brand light/><div className="footer-invitation">Игра <span>объединяет.</span></div></div><div className="footer-middle"><p>Футбол для детей от 3 до 11 лет.<br/>Официальный партнёр ДФК «Спартак».</p><nav aria-label="Навигация в подвале"><a href="#partnership">Сотрудничество</a>{navigation.map(item => <a key={item.href} href={item.href}>{item.label}</a>)}</nav><div className="footer-contacts"><a href={school.phoneHref}>{school.phone}</a><span>Москва, Сиреневый бульвар, 4</span><a href={school.telegram} target="_blank" rel="noopener noreferrer">Telegram <Icon name="up-right" size={16}/></a><a href={school.vk} target="_blank" rel="noopener noreferrer">ВКонтакте <Icon name="up-right" size={16}/></a></div></div><PrivacyNotice/><div className="footer-bottom"><span>© {new Date().getFullYear()} СпортАкадемКлуб</span><a href="https://icons8.com/" target="_blank" rel="noopener noreferrer">Иконки: Icons8 <Icon name="up-right" size={16}/></a></div></div></footer>
+    <footer className="footer"><div className="container"><div className="footer-top"><Brand light/><div className="footer-invitation">Игра <span>объединяет.</span></div></div><div className="footer-middle"><p>Футбол для детей от 3 до 11 лет.<br/>Официальный партнёр ДФК «Спартак».</p><nav aria-label="Навигация в подвале"><a href="#partnership">Сотрудничество</a>{navigation.map(item => <a key={item.href} href={item.href}>{item.label}</a>)}</nav><div className="footer-contacts"><a href={school.phoneHref}>{school.phone}</a><span>Москва, Сиреневый бульвар, 4</span><a href={school.telegram} target="_blank" rel="noopener noreferrer">Telegram <Icon name="up-right" size={16}/></a><a href={school.vk} target="_blank" rel="noopener noreferrer">ВКонтакте <Icon name="up-right" size={16}/></a></div></div><div className="footer-privacy"><p>Данные, введённые для записи, не сохраняются на сайте. Сообщение менеджеру вы отправляете самостоятельно в мессенджере. На сайте используется ВК-пиксель: он передаёт ВК сведения о посещениях и действиях для аналитики и рекламы.</p></div><div className="footer-bottom"><span>© {new Date().getFullYear()} СпортАкадемКлуб</span><a href="https://icons8.com/" target="_blank" rel="noopener noreferrer">Иконки: Icons8 <Icon name="up-right" size={16}/></a></div></div></footer>
     {enrollmentOpen && <EnrollmentDialog onClose={closeEnrollment} selectedPlan={selectedPlan}/>}
   </>;
 }

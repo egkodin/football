@@ -42,51 +42,13 @@ async function checkDisclosure(page, target, trigger) {
   assert(await page.locator(target).first().evaluate(el => el.matches('details') ? !el.open : el.inert && el.getBoundingClientRect().height === 0), `${target} must settle closed after rapid input`);
 }
 try {
-  const pixelContext = await browser.newContext({ viewport: { width: 390, height: 844 } });
-  await pixelContext.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><body>Карта</body></html>' }));
+  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
+  await context.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><title>Карта: проверка встраивания</title><body>Яндекс Карты</body></html>' }));
   let pixelRequests = 0;
-  await pixelContext.route('https://top-fwz1.mail.ru/**', route => {
+  await context.route('https://top-fwz1.mail.ru/**', route => {
     pixelRequests++;
     return route.fulfill({ contentType: 'application/javascript', body: 'window.__pixelEvents = [...window._tmr];' });
   });
-  const consent = await pixelContext.newPage();
-  const baseUrl = process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/';
-  await consent.goto(baseUrl, { waitUntil: 'load' });
-  await consent.waitForTimeout(350);
-  assert.equal(pixelRequests, 0, 'Pixel must not contact VK before consent');
-  assert.equal(await consent.locator('#vk-pixel').count(), 0);
-  await checkTouchTargets(consent);
-  await consent.screenshot({ path: `${out}/pixel-consent-mobile.png` });
-  await consent.getByRole('button', { name: 'Не разрешать', exact: true }).press('Enter');
-  await consent.reload({ waitUntil: 'load' });
-  assert.equal(pixelRequests, 0, 'Refusal must persist across reloads');
-  assert.equal(await consent.locator('#privacy-options').getAttribute('inert'), '');
-  await consent.getByRole('button', { name: 'Настройки ВК-пикселя' }).click();
-  await consent.getByRole('button', { name: 'Разрешить', exact: true }).press('Enter');
-  await consent.waitForFunction(() => window.__pixelEvents?.length === 1);
-  assert.equal(pixelRequests, 1, 'Consent must load one script even in React StrictMode');
-  assert.deepEqual(await consent.evaluate(() => window.__pixelEvents.map(({id, type}) => ({id, type}))), [{ id: '3793562', type: 'pageView' }]);
-  assert(await consent.getByRole('button', { name: 'Настройки ВК-пикселя' }).evaluate(el => el === document.activeElement), 'Settings must regain keyboard focus');
-  await consent.reload({ waitUntil: 'load' });
-  await consent.waitForFunction(() => window.__pixelEvents?.length === 1);
-  assert.equal(pixelRequests, 2, 'Saved permission must initialize once per page load');
-  await consent.getByRole('button', { name: 'Настройки ВК-пикселя' }).click();
-  await Promise.all([consent.waitForNavigation({ waitUntil: 'load' }), consent.getByRole('button', { name: 'Не разрешать', exact: true }).click()]);
-  assert.equal(await consent.locator('#vk-pixel').count(), 0, 'Revocation must stop the loaded tracker by reloading without it');
-  assert.equal(pixelRequests, 2);
-  assert.equal(await consent.evaluate(() => localStorage.getItem('vk-pixel-consent')), 'denied');
-  const otherTab = await pixelContext.newPage();
-  await otherTab.goto(baseUrl, { waitUntil: 'load' });
-  await Promise.all([consent.waitForNavigation({ waitUntil: 'load' }), otherTab.evaluate(() => localStorage.setItem('vk-pixel-consent', 'allowed'))]);
-  await consent.waitForFunction(() => window.__pixelEvents?.length === 1);
-  const beforeRevocation = pixelRequests;
-  await Promise.all([consent.waitForNavigation({ waitUntil: 'load' }), otherTab.evaluate(() => localStorage.clear())]);
-  assert.equal(await consent.locator('#vk-pixel').count(), 0, 'Clearing consent in another tab must unload the tracker');
-  assert.equal(pixelRequests, beforeRevocation);
-  await pixelContext.close();
-  console.log('VK pixel 3793562: opt-in, refusal, persistence, single initialization, keyboard and revocation (provider stub): passed');
-  const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, permissions: ['clipboard-read', 'clipboard-write'] });
-  await context.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<!doctype html><html lang="ru"><title>Карта: проверка встраивания</title><body>Яндекс Карты</body></html>' }));
   const page = await context.newPage();
   const errors = [];
   const galleryRequests = [];
@@ -98,8 +60,12 @@ try {
   const response = await page.goto(process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });
   assert.equal(response.status(), 200);
   await page.locator('.hero').waitFor();
-  await page.getByRole('button', { name: 'Не разрешать', exact: true }).click();
-  await page.waitForTimeout(350);
+  await page.waitForFunction(() => window.__pixelEvents?.length === 1);
+  assert.equal(pixelRequests, 1, 'Pixel must load once per page, including React StrictMode');
+  assert.deepEqual(await page.evaluate(() => window.__pixelEvents.map(({id, type}) => ({id, type}))), [{ id: '3793562', type: 'pageView' }]);
+  assert.equal(await page.locator('#privacy-options, .privacy-actions').count(), 0, 'Consent popup must be removed');
+  assert.equal(await page.getByRole('button', { name: 'Настройки ВК-пикселя' }).count(), 0);
+  console.log('VK pixel 3793562: automatic single initialization, no consent popup (provider stub): passed');
   assert(await page.locator('.hero, .hero *').evaluateAll(elements => elements.every(el => {
     const style = getComputedStyle(el);
     return style.animationName === 'none' && style.transform === 'none' && style.clipPath === 'none' && style.opacity === '1';
@@ -169,8 +135,16 @@ try {
   assert.equal(await page.locator('#coaches-title').innerText(), 'Тренеры');
   assert.equal(await page.locator('#curator-title').innerText(), 'Валерий Валерьевич\nЦимбал');
   assert.equal(await page.locator('.coach-curator img').count(), 1);
-  assert((await page.locator('.coach-curator img').getAttribute('src')).endsWith('coach-curator.webp'));
-  assert.equal(await page.getByRole('link', { name: 'Профиль в ДФК «Спартак»' }).getAttribute('href'), 'https://spartakpd.ru/cimbal');
+  assert((await page.locator('.coach-curator img').getAttribute('src')).endsWith('coach-curator-upscaled.webp'));
+  assert(await page.locator('.coach-curator img').evaluate(img => img.naturalWidth >= 1000 && img.naturalHeight >= 1000), 'Curator portrait must have higher resolution');
+  assert.equal(await page.locator('a[href*="spartakpd.ru/cimbal"]').count(), 0, 'Biography must be on this site');
+  await page.locator('#curator-biography-toggle').click();
+  await page.waitForTimeout(350);
+  assert.equal(await page.locator('#curator-biography ul').count(), 2);
+  assert.equal(await page.locator('#curator-biography li').count(), 11);
+  const curatorBiography = await page.locator('.coach-curator').innerText();
+  for (const text of ['6 лет', '2015–2020', '№ 18 «Митино»', '2011–2015', 'К. И. Бескова', '2002–2003', '«Зоркий»', '2004, 2005, 2006', '2008', 'спартакиады', '2013', '2012, 2013, 2014', 'серебряный призёр', 'первый взрослый разряд']) assert(curatorBiography.includes(text), `Missing curator biography: ${text}`);
+  await page.locator('#curator-biography-toggle').click();
   assert.equal(await page.locator('.partnership-benefits li').count(), 5);
   assert.equal(await page.locator('.partnership-benefits strong').count(), 3);
   assert(await page.evaluate(() => Boolean(document.querySelector('#partnership').compareDocumentPosition(document.querySelector('#about')) & Node.DOCUMENT_POSITION_FOLLOWING)));
@@ -336,6 +310,7 @@ try {
   for (let i = 0; i < 4; i++) await checkDisclosure(disclosures, `#faq-answer-${i}`, `#faq-question-${i}`);
   await checkDisclosure(disclosures, '#artem-career', '#artem-career-toggle');
   await checkDisclosure(disclosures, '#methodist-career', '#methodist-career-toggle');
+  await checkDisclosure(disclosures, '#curator-biography', '#curator-biography-toggle');
   await disclosures.locator('.coach-details-toggle').first().press('Enter');
   assert.equal(await disclosures.locator('.coach-details-toggle').first().getAttribute('aria-expanded'), 'true');
   await disclosures.locator('.coach-details-toggle').first().press('Enter');
