@@ -150,7 +150,7 @@ try {
   assert.deepEqual(await page.locator('.partnership-benefits .icon').evaluateAll(icons => icons.map(icon => [...icon.classList].find(name => name.startsWith('icon-')))), ['icon-team', 'icon-star', 'icon-trophy', 'icon-book', 'icon-inspection']);
   assert(await page.locator('.partnership-benefits strong').evaluateAll(items => items.every(item => Number(getComputedStyle(item).fontWeight) >= 700)), 'Every partnership thesis must be bold');
   assert(await page.evaluate(() => Boolean(document.querySelector('#partnership').compareDocumentPosition(document.querySelector('#about')) & Node.DOCUMENT_POSITION_FOLLOWING)));
-  assert.equal(await page.locator('footer').getByRole('link', { name: 'ВКонтакте' }).getAttribute('href'), 'https://vk.ru/dfc_sportacade');
+  assert.equal(await page.locator('footer').getByRole('link', { name: 'ВКонтакте' }).getAttribute('href'), 'https://vk.ru/dfc_sportacadem');
 
   assert.equal(await page.locator('#coach-title').innerText(), 'Артем Михайлович\nТрофимов');
   assert.deepEqual(await page.locator('.coach-license').allInnerTexts(), ['ЛИЦЕНЗИЯ C–UEFA', 'ЛИЦЕНЗИЯ B–UEFA', 'ЛИЦЕНЗИЯ C–UEFA']);

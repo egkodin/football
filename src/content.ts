@@ -10,7 +10,7 @@ export const school = {
   phoneHref: 'tel:+79853354092',
   address: 'Москва, Сиреневый бульвар, 4',
   telegram: 'https://t.me/sportacadem',
-  vk: 'https://vk.ru/dfc_sportacade',
+  vk: 'https://vk.ru/dfc_sportacadem',
   max: 'https://max.ru/u/f9LHodD0cOLHq0R9bIlWQIMtwDu0fxEzD6uCPPlyNP9TEZHLEjpNiXRi2nY',
   map: 'https://yandex.ru/maps/?text=' + encodeURIComponent('Москва, Сиреневый бульвар, 4'),
   mapWidget: 'https://yandex.ru/map-widget/v1/?ll=37.760081%2C55.801081&z=16&pt=37.760081%2C55.801081%2Cpm2rdm',
