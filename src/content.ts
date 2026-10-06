@@ -4,6 +4,7 @@ export const assetPath = (file: string) => `${import.meta.env.BASE_URL}${file.re
 // website on 2026-10-02. The reference website is used for visual direction only.
 export const school = {
   name: 'СпортАкадемКлуб',
+  url: 'https://cfc-sportacadem.ru/',
   subtitle: 'Детский футбольный клуб',
   originalUrl: 'https://dfc-sportacadem.tb.ru/',
   phone: '+7 985 335 40 92',

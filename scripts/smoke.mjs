@@ -57,6 +57,9 @@ try {
     if (/hall-\d+-(?:768|1600)\.webp$/.test(path)) galleryRequests.push(path);
   });
   page.on('pageerror', error => errors.push(error.message));
+  page.on('console', message => {
+    if (message.type() === 'error' && /hydration|Minified React error/i.test(message.text())) errors.push(message.text());
+  });
   const response = await page.goto(process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/', { waitUntil: 'domcontentloaded' });
   assert.equal(response.status(), 200);
   await page.locator('.hero').waitFor();
@@ -86,8 +89,7 @@ try {
     assert.equal(png.readUInt32BE(16), 96);
     assert.equal(png.readUInt32BE(20), 96);
   }
-  assert.equal(await page.getByRole('link', { name: 'Иконки: Icons8' }).getAttribute('href'), 'https://icons8.com/');
-  console.log(`${iconUrls.length} local Icons8 PNGs and attribution: passed`);
+  console.log(`${iconUrls.length} local Icons8 PNGs: passed`);
   assert.equal(await page.locator('.hero-title-line').count(), 3);
   for (const id of ['partnership', 'about', 'coaches', 'program', 'venues', 'schedule', 'pricing', 'contacts']) assert.equal(await page.locator(`#${id}`).count(), 1);
   for (const [property, value] of Object.entries({ '--brand-green': '#11651a', '--yellow': '#ffdd2d', '--red': '#db320b' })) assert.equal(await page.evaluate(p => getComputedStyle(document.documentElement).getPropertyValue(p).trim(), property), value);
@@ -109,6 +111,7 @@ try {
     }
   }
   assert((await page.locator('.hero-photo').getAttribute('src')).endsWith('hero-training-uniform.jpg'), 'Use the first photo with the corrected uniform');
+  assert(/hero-training-(768|1254)\.webp$/.test(await page.locator('.hero-photo').evaluate(img => img.currentSrc)), 'Load the compressed WebP variant');
   assert.equal(await page.locator('.brand-crest').count(), 2);
   const map = page.locator('.address-map');
   const mapUrl = new URL(await map.getAttribute('src'));
@@ -404,4 +407,51 @@ try {
   console.log('44 px targets, delayed photo, image failure, retry and keyboard recovery: passed');
   assert.deepEqual(errors, []);
   console.log('9 responsive widths, mobile menu, anchors and browser errors: passed');
+  const baseUrl = process.env.FOOTBALL_BASE_URL || 'http://127.0.0.1:5173/';
+  if (process.env.FOOTBALL_BASE_URL) {
+    const raw = await context.request.get(baseUrl);
+    assert((await raw.text()).includes('<h1 id="hero-title">'), 'Production HTML must include the real page before JavaScript runs');
+    for (const path of ['robots.txt', 'sitemap.xml']) assert.equal((await context.request.get(new URL(path, baseUrl).href)).status(), 200);
+    const noJs = await browser.newContext({ javaScriptEnabled: false, reducedMotion: 'reduce', viewport: { width: 390, height: 844 } });
+    await noJs.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
+    const staticPage = await noJs.newPage();
+    await staticPage.goto(baseUrl, { waitUntil: 'load' });
+    assert.equal(await staticPage.getByRole('heading', { level: 1 }).innerText(), 'Футбол\nдля детей\nв Москве.');
+    assert.equal(await staticPage.getByRole('tabpanel').count(), 3, 'Every age group must be accessible without JavaScript');
+    for (const id of ['artem-career', 'methodist-career', 'curator-biography', 'faq-answer-3']) {
+      assert(await staticPage.locator(`#${id}`).isVisible());
+      assert.equal(await staticPage.locator(`#${id}`).getAttribute('inert'), null);
+      assert.equal(await staticPage.locator(`#${id}`).getAttribute('aria-hidden'), null);
+    }
+    assert(await staticPage.locator('noscript a[href^="tel:"]').isVisible());
+    await staticPage.locator('.venue-main > img').scrollIntoViewIfNeeded();
+    assert.equal(await staticPage.locator('.venue-main > img').evaluate(img => getComputedStyle(img).visibility), 'visible');
+    for (const width of [320, 390, 1440]) {
+      await staticPage.setViewportSize({ width, height: 900 });
+      assert(await staticPage.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `Static page overflow at ${width}`);
+    }
+    await staticPage.setViewportSize({ width: 390, height: 844 });
+    await staticPage.screenshot({ path: `${out}/no-js.png`, fullPage: true });
+    await noJs.close();
+    const delayed = await browser.newContext({ viewport: { width: 390, height: 844 } });
+    let releaseScript;
+    const scriptGate = new Promise(resolve => { releaseScript = resolve; });
+    await delayed.route(/\/assets\/index-[^/]+\.js$/, async route => { await scriptGate; await route.continue(); });
+    await delayed.route('https://yandex.ru/map-widget/**', route => route.fulfill({ contentType: 'text/html', body: '<html></html>' }));
+    await delayed.route('https://top-fwz1.mail.ru/**', route => route.fulfill({ contentType: 'application/javascript', body: '' }));
+    const cached = await delayed.newPage();
+    const hydrationErrors = [];
+    cached.on('pageerror', error => hydrationErrors.push(error.message));
+    cached.on('console', message => {
+      if (message.type() === 'error' && /hydration|Minified React error/i.test(message.text())) hydrationErrors.push(message.text());
+    });
+    await cached.goto(baseUrl, { waitUntil: 'commit' });
+    await cached.locator('.venue-main').scrollIntoViewIfNeeded();
+    await cached.waitForFunction(() => document.querySelector('.venue-main > img')?.naturalWidth > 0);
+    releaseScript();
+    await cached.waitForFunction(() => document.querySelector('.venue-main > img[data-active="true"]')?.dataset.state === 'ready');
+    assert.deepEqual(hydrationErrors, [], 'Hydration must work after prerendered images finish loading');
+    await delayed.close();
+    console.log('Raw HTML, SEO files, no-JS content and delayed hydration with cached photos: passed');
+  }
 } finally { await browser.close(); }

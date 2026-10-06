@@ -4,6 +4,7 @@ import App from './App';
 import '@fontsource-variable/montserrat';
 import './styles.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode><App /></React.StrictMode>,
-);
+const root = document.getElementById('root')!;
+const app = <React.StrictMode><App /></React.StrictMode>;
+if (root.hasChildNodes()) ReactDOM.hydrateRoot(root, app);
+else ReactDOM.createRoot(root).render(app);

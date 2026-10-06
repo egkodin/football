@@ -324,6 +324,13 @@ h2 { font-size: clamp(36px, 3.7vw, 52px); line-height: 1.08; font-weight: 700; m
 .schedule-tabs button[aria-selected='true'] { background: var(--brand-green); border-color: var(--brand-green); color: var(--paper); }
 .schedule-tabs strong { font-size: 23px; font-weight: 600; letter-spacing: -.03em; }
 .schedule-panel { display: grid; grid-template-columns: 1fr 2fr; gap: 30px; background: var(--paper); margin-top: 17px; padding: 32px; }
+.schedule-panel[hidden] { display: none; }
+html:not(.js) .schedule-panel[hidden] { display: grid; }
+html:not(.js) .schedule-tabs { display: none; }
+html:not(.js) .collapse:not(.menu-collapse) { grid-template-rows: 1fr; opacity: 1; visibility: visible; }
+html:not(.js) .menu-collapse, html:not(.js) .menu-button { display: none; }
+html:not(.js) .venue-main > img { opacity: 1; visibility: visible; }
+html:not(.js) .venue-photo-state, html:not(.js) .venue-thumbnails, html:not(.js) .gallery-controls { display: none; }
 .schedule-description h3 { font-size: 18px; letter-spacing: -.03em; margin: 17px 0 12px; }
 .schedule-description > span:last-child { color: var(--muted); }
 .schedule-days { display: grid; grid-template-columns: repeat(3, 1fr); align-items: center; }

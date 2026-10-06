@@ -29,6 +29,8 @@ jobs:
         run: npm ci --no-audit --no-fund
       - name: Build and check TypeScript
         run: npm run build
+      - name: Check SEO output
+        run: npm run test:seo
       - name: Configure Pages
         uses: actions/configure-pages@v5
       - name: Upload website
